@@ -1,0 +1,18 @@
+Package: wetlandmapR
+Title: Mapping Wetland Ecosystems
+Version: 0.0.0.1000
+Authors@R: 
+    person(given = "Simon",
+           family = "Casley",
+           role = c("aut", "cre"),
+           email = "scasley@ccl.ca")
+Description: Mapping wetland ecosystems using data driven R statistical methods 
+    like Random Forests and open source GIS.
+License: Apache
+Encoding: UTF-8
+LazyData: true
+Imports:
+    RSAGA,
+    raster,
+    ModelMap,
+RoxygenNote: 6.1.1
