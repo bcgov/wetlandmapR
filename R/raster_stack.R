@@ -13,7 +13,7 @@ create_dem_products <- function(dem, outdir, products = "ALL") {
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
   raster::writeRaster(dem.r, dem.sgrd, format = "SAGA", prj = TRUE, overwrite = TRUE)
 
-  if (toupper(products) == "all") {
+  if (toupper(products) == "ALL") {
     products <- c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN", "CPROF", "TOPOWET", "CAREA")
   } else {
     products <- toupper(products)
@@ -80,9 +80,11 @@ create_dem_products <- function(dem, outdir, products = "ALL") {
 #' @param target_raster filename (character) of target raster used to align all
 #'   other rasters.
 #' @param outdir optional output folder path (character) where .img files of the stacked
-#'   rasters are saved.
+#'   rasters are saved. If no value is provided, no .img files are saved.
+#' @param rastLUTfn optional filename (character) of output rastLUT .csv file, for use in
+#'   \code{wetland_map}.
 #' @return RasterStack object
-stack_rasters <- function(rasters, target_raster, outdir = NULL) {
+stack_rasters <- function(rasters, target_raster, outdir = NULL, rastLUTfn = NULL) {
   # TO DO:
   # Use folder as input for rasters; stack all rasters in that folder
 
@@ -98,6 +100,10 @@ stack_rasters <- function(rasters, target_raster, outdir = NULL) {
   }
 
   rp <- list()
+  rasterLUT <- data.frame(file=character(),
+                          predictor=character(),
+                          band=integer(),
+                          stringsAsFactors=FALSE)
   for (i in 1:length(rasters)) {
     # TO DO:
     # Check resolution of raster and, if target raster resolution is much larger,
@@ -121,6 +127,22 @@ stack_rasters <- function(rasters, target_raster, outdir = NULL) {
 
     r1 <- raster::projectRaster(r, t, method = "bilinear", filename = outfiles[i], overwrite = TRUE)
     rp <- append(rp, r1)
+
+    # Add rows to rastLUT
+    for (b in 1:raster::nbands(r)) {
+      # If no output .img files are being saved, use the input raster in the rastLUT
+      if (is.null(outdir)) {
+        file = normalizePath(rasters[i], winslash = "/")
+      } else {
+        file = normalizePath(outfiles[i], winslash = "/")
+      }
+      rasterLUT <- rbind(rasterLUT, data.frame(file = file, predictor = names(r)[b], band = b))
+    }
+  }
+
+  # Write rasterLUT to csv
+  if (!is.null(rastLUTfn)) {
+    write.table(rasterLUT, rastLUTfn, row.names = FALSE, col.names = FALSE, sep=",")
   }
 
   return(raster::stack(rp))

@@ -4,7 +4,7 @@
 \alias{stack_rasters}
 \title{Create a stack of rasters}
 \usage{
-stack_rasters(rasters, target_raster, outdir = NULL)
+stack_rasters(rasters, target_raster, outdir = NULL, rastLUTfn = NULL)
 }
 \arguments{
 \item{rasters}{filename(s) (character) of raster files to be
@@ -15,7 +15,10 @@ stacked with the target_raster. Input rasters can be any format read by
 other rasters.}
 
 \item{outdir}{optional output folder path (character) where .img files of the stacked
-rasters are saved.}
+rasters are saved. If no value is provided, no .img files are saved.}
+
+\item{rastLUTfn}{optional filename (character) of output rastLUT .csv file, for use in
+\code{wetland_map}.}
 }
 \value{
 RasterStack object
