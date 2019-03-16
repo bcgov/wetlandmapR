@@ -47,11 +47,13 @@ input_points_withvalues <- grid_values_at_sp(raster_stack,
 #------------------------------------------------------------------------------
 # Setup predictor list and raster LUT...
 #------------------------------------------------------------------------------
+rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv", header = FALSE, stringsAsFactors = FALSE)
+
 #
 # NOTE:
-# Edit .csv created by stack_rasters() to remove any rows that aren't required.
-#
-rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv", header = FALSE, stringsAsFactors = FALSE)
+# Edit .csv created by stack_rasters() or rastLUT to remove any rows that aren't required.
+# i.e. exclude rows 27 to 28
+rastLUT <- rastLUT[-(27:28),]
 
 # Character vector of the predictor names, used as input to the model
 predList <- rastLUT[, 2]
@@ -60,7 +62,7 @@ predList <- rastLUT[, 2]
 #------------------------------------------------------------------------------
 # Run model and diagnostics...
 #------------------------------------------------------------------------------
-out.list <- wetland_model(qdatafn = qdatafn,
+model.out <- wetland_model(qdatafn = qdatafn,
                           model.type = "RF",
                           model.folder = "./output",
                           unique.rowname = "OBJECTID",
@@ -73,7 +75,7 @@ out.list <- wetland_model(qdatafn = qdatafn,
 #------------------------------------------------------------------------------
 # Create map from model...
 #------------------------------------------------------------------------------
-wetland_map(model.obj = out.list[[1]],
-            folder = out.list[[2]],
-            MODELfn = basename(out.list[[2]]),
+wetland_map(model.obj = model.out[[1]],
+            folder = model.out[[2]],
+            MODELfn = basename(model.out[[2]]),
             rastLUTfn = rastLUT)

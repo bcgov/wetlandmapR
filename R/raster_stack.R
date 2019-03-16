@@ -10,6 +10,7 @@ create_dem_products <- function(dem, outdir, products = "ALL") {
 
   # Convert DEM to SAGA grid
   dem.r <- raster::raster(dem)
+  names(dem.r) <- "ELEV"
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
   raster::writeRaster(dem.r, dem.sgrd, format = "SAGA", prj = TRUE, overwrite = TRUE)
 
