@@ -27,6 +27,14 @@ raster_stack <- stack_rasters(rasters = raster_list,
                               outdir = "../../testdata/raster_stack",
                               rastLUTfn = "../../testdata/raster_stack/rastLUT.csv")
 
+# If you already have a folder containing rasters that have been aligned to the
+# same grid, i.e. previous output of stack_rasters(), you can use those rasters
+# to create a RasterStack object and rastLUT, e.g:
+#   raster_list <- list.files("../../testdata/raster_stack", "img$", full.names = TRUE)
+#   raster_stack <- stack_rasters(rasters = raster_list,
+#                                 aligned = TRUE,
+#                                 rastLUTfn = "../../testdata/raster_stack/rastLUT.csv")
+
 #------------------------------------------------------------------------------
 # Add raster values to training points...
 #------------------------------------------------------------------------------
@@ -34,26 +42,31 @@ raster_stack <- stack_rasters(rasters = raster_list,
 input_points <- raster::shapefile("../../testdata/training_points.shp")
 
 # File Geodatabase points:
-#input_points <- rgdal::readOGR(dsn = "../../WillistonWetlands.gdb",
-#                               layer = "AttributedPoints_FWCP_Master_20April2018")
+#   input_points <- rgdal::readOGR(dsn = "../../WillistonWetlands.gdb",
+#                                  layer = "AttributedPoints_FWCP_Master_20April2018")
 
-# Add raster values to training points
+# AOI layer:
+aoi_polys <- raster::shapefile("../../testdata/dinosaur_aoi_basins.shp")
+
+# Add raster values to training points; attribute points by AOI
 qdatafn <- "../../testdata/training_points_attd.csv"
 input_points_withvalues <- grid_values_at_sp(raster_stack,
                                              input_points,
-                                             filename = qdatafn)
+                                             filename = qdatafn,
+                                             aoi = aoi_polys)
 
 
 #------------------------------------------------------------------------------
 # Setup predictor list and raster LUT...
 #------------------------------------------------------------------------------
-rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv", header = FALSE, stringsAsFactors = FALSE)
+rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv",
+                    header = FALSE,
+                    stringsAsFactors = FALSE)
 
-#
 # NOTE:
-# Edit .csv created by stack_rasters() or rastLUT to remove any rows that aren't required.
-# i.e. exclude rows 27 to 28
-rastLUT <- rastLUT[-(27:28),]
+# Edit rastLUT (or edit the .csv created by stack_rasters() before reading it) to remove any rows that aren't required.
+# i.e. exclude rows 42 to 43
+rastLUT <- rastLUT[-(42:43),]
 
 # Character vector of the predictor names, used as input to the model
 predList <- rastLUT[, 2]
@@ -70,12 +83,14 @@ model.out <- wetland_model(qdatafn = qdatafn,
                           predFactor = FALSE,
                           response.name = "T_W_Class",
                           response.type = "categorical",
-                          seed = 44)
+                          seed = 44,
+                          aoi.col = "BASIN")
 
 #------------------------------------------------------------------------------
 # Create map from model...
 #------------------------------------------------------------------------------
-wetland_map(model.obj = model.out[[1]],
+
+wetland_map(model.out = model.out[[1]],
             folder = model.out[[2]],
             MODELfn = basename(model.out[[2]]),
             rastLUTfn = rastLUT)

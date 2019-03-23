@@ -12,8 +12,8 @@ create_dem_products(dem, outdir, products = "ALL")
 \item{outdir}{output folder path (character).}
 
 \item{products}{character. The DEM products to be created. Can be a vector
-with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN",
-"CPROF", "TOPOWET", "CAREA")}
+with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
+"CPLAN", "CPROF", "TOPOWET", "CAREA").}
 }
 \description{
 Create products from a DEM using RSAGA

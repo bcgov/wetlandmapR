@@ -2,11 +2,11 @@
 % Please edit documentation in R/modelmap_processing.R
 \name{wetland_model}
 \alias{wetland_model}
-\title{Run model and diagnostics for wetland prediction}
+\title{Run model for wetland prediction}
 \usage{
 wetland_model(qdatafn, model.type, model.folder, unique.rowname, predList,
-  predFactor, response.name, response.type, seed, MODELfn = NULL,
-  na.action = "na.roughfix", ...)
+  predFactor, response.name, response.type, seed, aoi.col = NULL,
+  aoi.target = NULL, MODELfn = NULL, na.action = "na.roughfix", ...)
 }
 \arguments{
 \item{qdatafn}{training data filename.}
@@ -20,26 +20,43 @@ wetland_model(qdatafn, model.type, model.folder, unique.rowname, predList,
 \item{predList}{character vector of predictor names that match the column
 names in the training data.}
 
-\item{predFactor}{character vector of predictor names that are factors (categorical), or
-FALSE if there are no categorical predictors.}
+\item{predFactor}{character vector of predictor names that are factors
+(categorical), or FALSE if there are no categorical predictors.}
 
-\item{response.name}{response variable (string); column name in the training data.}
+\item{response.name}{response variable (string); column name in the training
+data.}
 
-\item{response.type}{response type (string). One of "binary", "categorical", or "continuous".}
+\item{response.type}{response type (string). One of "binary", "categorical",
+or "continuous".}
 
 \item{seed}{number (integer) used to initialize randomization.}
 
-\item{MODELfn}{optional filename to use for saved model output. If \code{MODELfn = NULL} (default)
-a unique name is created automatically using the date and time the model is run.}
+\item{aoi.col}{optional string to specify the column name in the training
+data which identifies seperate AOIs. Setting this parameter means a
+seperate model object will be output each using a sub-set of training
+points defined by the values in this column. All sub-sets will be run
+unless the \code{aoi.target} parameter is specified. To run the model using
+all training points, use \code{aoi.col = NULL} (default).}
 
-\item{na.action}{optional string to specify action to take if there are NA values
-in the predictor data. Defaults to \code{na.roughfix}.}
+\item{aoi.target}{optional character vector to identify which AOI to run
+the model on. If \code{aoi.target = NULL} (default), and \code{aoi.col}
+has been specified, the model will be run on each AOI in turn. \code{aoi.
+target} will be appended on to the output folder name created for each AOI.}
+
+\item{MODELfn}{optional filename to use for saved model output. If
+\code{MODELfn = NULL} (default), a unique name is created automatically
+using the date and time the model is run.}
+
+\item{na.action}{optional string to specify action to take if there are NA
+values in the predictor data. Defaults to \code{na.roughfix}.}
 
 \item{...}{any other parameters to pass to ModelMap::model.build.}
 }
 \value{
-list containing model object from ModelMap::model.build and output model folder string.
+list containing model object from ModelMap::model.build for each AOI;
+  list elements are named by the output model folder string (including AOI
+  target name if aoi.target is provided).
 }
 \description{
-Run model and diagnostics for wetland prediction
+Run model for wetland prediction
 }

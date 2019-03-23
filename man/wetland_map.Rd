@@ -16,8 +16,8 @@ wetland_map(model.obj, folder, MODELfn, rastLUTfn, na.action = "na.omit",
 
 \item{rastLUTfn}{filename of a .csv for a rastLUT.}
 
-\item{na.action}{optional string to specify action to take if there are NA values
-in the prediction data. Defaults to \code{na.omit}.}
+\item{na.action}{optional string to specify action to take if there are NA
+values in the prediction data. Defaults to \code{na.omit}.}
 
 \item{...}{any other parameters to pass to ModelMap::model.mapmake.}
 }

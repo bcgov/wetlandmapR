@@ -4,21 +4,30 @@
 \alias{stack_rasters}
 \title{Create a stack of rasters}
 \usage{
-stack_rasters(rasters, target_raster, outdir = NULL, rastLUTfn = NULL)
+stack_rasters(rasters, aligned = FALSE, target_raster = NULL,
+  outdir = NULL, rastLUTfn = NULL)
 }
 \arguments{
 \item{rasters}{filename(s) (character) of raster files to be
 stacked with the target_raster. Input rasters can be any format read by
-\code{raster}}
+\code{raster}.}
 
-\item{target_raster}{filename (character) of target raster used to align all
-other rasters.}
+\item{aligned}{optional boolean, indicates whether input rasters are already
+aligned to the same grid. Use \code{aligned = TRUE} if \code{stack_rasters}
+has already been run and you want to create a RasterStack object from an
+existing list of aligned rasters. If \code{aligned = FALSE} (default),
+\code{target_raster} must be provided.}
 
-\item{outdir}{optional output folder path (character) where .img files of the stacked
-rasters are saved. If no value is provided, no .img files are saved.}
+\item{target_raster}{optional filename (character) of target raster used to
+align all other rasters. Required if \code{aligned = FALSE}.}
 
-\item{rastLUTfn}{optional filename (character) of output rastLUT .csv file, for use in
-\code{wetland_map}.}
+\item{outdir}{optional output folder path (character) where .img files of the
+stacked rasters are saved. If no value is provided, no .img files are saved.
+If \code{aligned = TRUE}, no output .img files are saved, even if an output
+folder is given.}
+
+\item{rastLUTfn}{optional filename (character) of output rastLUT .csv file,
+for use in \code{wetland_map}.}
 }
 \value{
 RasterStack object

@@ -4,14 +4,19 @@
 \alias{grid_values_at_sp}
 \title{Extract raster values at points}
 \usage{
-grid_values_at_sp(x, y, filename = NULL)
+grid_values_at_sp(x, y, filename = NULL, aoi = NULL)
 }
 \arguments{
-\item{x}{Raster* object}
+\item{x}{Raster* object.}
 
-\item{y}{SpatialPoints* object}
+\item{y}{SpatialPoints* object.}
 
-\item{filename}{optional output CSV filename}
+\item{filename}{optional output CSV filename.}
+
+\item{aoi}{optional SpatialPolygon object, used to intersect with input
+points. If a point intersects more than one polygon, that point will be
+duplicated (once for each polygon it intersects) in the output. If a point
+doesn't intersect any AOI polygon it will be excluded from the output.}
 }
 \value{
 SpatialPoints* object with values added to it's data frame
