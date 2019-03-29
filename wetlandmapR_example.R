@@ -84,13 +84,14 @@ model.out <- wetland_model(qdatafn = qdatafn,
                           response.name = "T_W_Class",
                           response.type = "categorical",
                           seed = 44,
+                          response.target = c("Wb", "Wf", "Ws"),
                           aoi.col = "BASIN")
 
 #------------------------------------------------------------------------------
-# Create map from model...
+# Create map(s) from model...
 #------------------------------------------------------------------------------
-
-wetland_map(model.out = model.out[[1]],
-            folder = model.out[[2]],
-            MODELfn = basename(model.out[[2]]),
-            rastLUTfn = rastLUT)
+wetland_map(model.out = model.out,
+            model.folder = "./output",
+            rastLUTfn = rastLUT,
+            aoi = aoi_polys,
+            aoi.col = "BASIN")

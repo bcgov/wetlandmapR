@@ -13,19 +13,25 @@
 #' @param response.type response type (string). One of "binary", "categorical",
 #'   or "continuous".
 #' @param seed number (integer) used to initialize randomization.
+#' @param response.target optional character vector used to subset training
+#'   data to include only those rows that have a value in \code{response.name}
+#'   column that matches those in \code{response.target}.
 #' @param aoi.col optional string to specify the column name in the training
-#'   data which identifies seperate AOIs. Setting this parameter means a
-#'   seperate model object will be output each using a sub-set of training
-#'   points defined by the values in this column. All sub-sets will be run
-#'   unless the \code{aoi.target} parameter is specified. To run the model using
-#'   all training points, use \code{aoi.col = NULL} (default).
+#'   data which identifies seperate AOIs. The values in this column must not
+#'   contain the character "-". Setting this parameter means a seperate model
+#'   object will be output each using a sub-set of training points defined by
+#'   the values in this column. All sub-sets will be run unless the
+#'   \code{aoi.target} parameter is specified. To run the model using all
+#'   training points, use \code{aoi.col = NULL} (default).
 #' @param aoi.target optional character vector to identify which AOI to run
 #'   the model on. If \code{aoi.target = NULL} (default), and \code{aoi.col}
 #'   has been specified, the model will be run on each AOI in turn. \code{aoi.
 #'   target} will be appended on to the output folder name created for each AOI.
 #' @param MODELfn optional filename to use for saved model output. If
 #'   \code{MODELfn = NULL} (default), a unique name is created automatically
-#'   using the date and time the model is run.
+#'   using the date and time the model is run. If \code{aoi.col} is specified,
+#'   each unique value in this field is appended to \code{MODELfn} for each
+#'   model run.
 #' @param na.action optional string to specify action to take if there are NA
 #'   values in the predictor data. Defaults to \code{na.roughfix}.
 #' @param ... any other parameters to pass to ModelMap::model.build.
@@ -41,6 +47,7 @@ wetland_model <- function(qdatafn,
                           response.name,
                           response.type,
                           seed,
+                          response.target = NULL,
                           aoi.col = NULL,
                           aoi.target = NULL,
                           MODELfn = NULL,
@@ -48,13 +55,12 @@ wetland_model <- function(qdatafn,
                           ...
                           ) {
 
-  # TO DO:
-  # Add response.target param (character vector) used to subset qdata to include
-  # only those rows that have a value in response.name column that matches those
-  # in response.target.
-  # ...
-
   qdata <- read.csv(qdatafn, stringsAsFactors = FALSE)
+
+  # Subset training data based on response.target, or use the full dataset
+  if (!is.null(response.target)) {
+    qdata <- qdata[qdata[[response.name]] %in% response.target,]
+  }
 
   # Generate unique model run name if MODELfn param is NULL
   if (is.null(MODELfn)) {
@@ -73,7 +79,9 @@ wetland_model <- function(qdatafn,
   }
 
   # Prepend aoi.target to model run name
-  MODELfn <- paste(MODELfn, aoi.target, sep = "-")
+  if (!is.null(aoi.target)) {
+    MODELfn <- paste(MODELfn, aoi.target, sep = "-")
+  }
 
   # Create return list based on number of AOIs
   out.list <- vector(mode = "list", length = length(MODELfn))
@@ -196,26 +204,123 @@ wetland_model <- function(qdatafn,
 
 #' Wetland map production
 #'
-#' @param model.obj model object returned from \code{wetland_model}.
-#' @param folder folder name used for output
-#' @param MODELfn filename to use for saved model output.
-#' @param rastLUTfn filename of a .csv for a rastLUT.
+#' @param model.out list object returned from \code{wetland_model}. List
+#'   contains model object(s) from ModelMap::model.build for each AOI;
+#'   list elements are named by the output model folder string (including AOI
+#'   target name if aoi.target is provided).
+#' @param model.folder folder where the output from \code{wetland_model} was
+#'   created. Same as \code{model.folder} input to \code{wetland_model}.
+#' @param rastLUTfn filename of a .csv or dataframe of a rastLUT.
+#' @param aoi optional SpatialPolygon object that was used to intersect with
+#'   input points. This parameter is required if \code{model.out} was generated
+#'   using an AOI.
+#' @param aoi.col optional string to specify the column name in the \code{aoi}
+#'   data which identifies seperate AOIs. Required if \code{aoi} is provided.
 #' @param na.action optional string to specify action to take if there are NA
 #'   values in the prediction data. Defaults to \code{na.omit}.
 #' @param ... any other parameters to pass to ModelMap::model.mapmake.
-wetland_map <- function (model.obj,
-                         folder,
-                         MODELfn,
+wetland_map <- function (model.out,
+                         model.folder,
                          rastLUTfn,
+                         aoi = NULL,
+                         aoi.col = NULL,
                          na.action = "na.omit",
                          ...) {
 
-  # model.mapmake() creates an ascii text file and an imagine .img file of
-  # predictions for each map pixel.
-  model.mapmake(model.obj = model.obj,
-                folder = folder,
-                MODELfn = MODELfn,
-                rastLUTfn = rastLUTfn,
-                na.action = na.action,
-                ...)
+  # Read rastLUTfn if not a dataframe
+  if (!is.data.frame(rastLUTfn)) {
+    rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv",
+                        header = FALSE,
+                        stringsAsFactors = FALSE)
+  } else {
+    rastLUT <- rastLUTfn
+  }
+
+  # Read predList from rastLUT
+  predList <- rastLUT[, 2]
+
+  # Create a RasterStack from rastLUT rasters if AOI is used. This will be used
+  # to clip rasters to AOIs
+  if (!is.null(aoi)) {
+    rs <- stack_rasters(unique(rastLUT[ ,1]), aligned = TRUE)
+    # Remove any layers/bands not in the rastLUT
+    rs <- raster::subset(rs, rastLUT[ ,2])
+  }
+
+  # Loop through all model objects in model.out
+  for (i in 1:length(model.out)) {
+
+    # Model was run with an AOI, but no AOI provided
+    if (is.null(aoi) & length(model.out) > 1) {
+
+      stop("Your model output contains more than 1 model object, but no AOI
+           object has been provided. Please set the aoi parameter.")
+
+    # AOI provided, but no AOI column specified
+    } else if (!is.null(aoi) & is.null(aoi.col)) {
+
+      stop("The aoi.col parameter is required if aoi parameter is not NULL.")
+
+    # AOI has been provided...so clip the rasters
+    } else if (!is.null(aoi)) {
+
+      # Extract the AOI target name from the model name
+      aoi.target <- tail(strsplit(names(model.out)[i], "-")[[1]], n = 1)
+
+      # Check that the aoi.target exists in aoi object's aoi.col field
+      if (!aoi.target %in% aoi[[aoi.col,]]) {
+
+        stop(paste0("The AOI used for this model run (", aoi.target,
+                    ") does not exist in the AOI object provided."))
+
+      } else {
+
+        # Clip rasters (from rastLUT) to AOI and save in temp folder
+        # Extract AOI target poly
+        aoi.target.shp <- aoi[aoi[[aoi.col]] == aoi.target,]
+
+        # Clip rasters to poly
+        rs.crop <- raster::crop(rs, extent(aoi.target.shp))
+        rs.mask <- raster::mask(rs.crop, aoi.target.shp)
+
+        # Write clipped rasters to temp files
+        model.folder.tmp <- file.path(model.folder, paste0("tmp_", aoi.target))
+        dir.create(model.folder.tmp, showWarnings = FALSE)
+        rs.files <- paste0(file.path(model.folder.tmp, names(rs.mask)), ".img")
+        raster::writeRaster(rs.mask,
+                            filename = rs.files,
+                            bylayer = TRUE,
+                            overwrite = TRUE,
+                            format = "HFA")
+
+        # Generate temp rastLUT
+        # All temp rasters are single band
+        rastLUT <- data.frame(rs.files, predList, 1, stringsAsFactors = FALSE)
+      }
+    }
+
+    MODELfn <- names(model.out)[i]
+    model.folder.out <- file.path(model.folder, MODELfn)
+
+    # Make map raster
+    #-------------------
+
+    # model.mapmake() creates an ascii text file and an imagine .img file of
+    # predictions for each map pixel.
+    ModelMap::model.mapmake(model.obj = model.out[[i]],
+                            folder = model.folder.out,
+                            MODELfn = MODELfn,
+                            rastLUTfn = rastLUT,
+                            na.action = na.action,
+                            ...)
+
+    # Clean up any temp folders
+    unlink(file.path(model.folder, "tmp_*"), recursive = TRUE)
+
+  }
+
+  # TO DO:
+  # Setup mapcodes
+  # Produce map
+  # ...
 }

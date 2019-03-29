@@ -4,17 +4,26 @@
 \alias{wetland_map}
 \title{Wetland map production}
 \usage{
-wetland_map(model.obj, folder, MODELfn, rastLUTfn, na.action = "na.omit",
-  ...)
+wetland_map(model.out, model.folder, rastLUTfn, aoi = NULL,
+  aoi.col = NULL, na.action = "na.omit", ...)
 }
 \arguments{
-\item{model.obj}{model object returned from \code{wetland_model}.}
+\item{model.out}{list object returned from \code{wetland_model}. List
+contains model object(s) from ModelMap::model.build for each AOI;
+list elements are named by the output model folder string (including AOI
+target name if aoi.target is provided).}
 
-\item{folder}{folder name used for output}
+\item{model.folder}{folder where the output from \code{wetland_model} was
+created. Same as \code{model.folder} input to \code{wetland_model}.}
 
-\item{MODELfn}{filename to use for saved model output.}
+\item{rastLUTfn}{filename of a .csv or dataframe of a rastLUT.}
 
-\item{rastLUTfn}{filename of a .csv for a rastLUT.}
+\item{aoi}{optional SpatialPolygon object that was used to intersect with
+input points. This parameter is required if \code{model.out} was generated
+using an AOI.}
+
+\item{aoi.col}{optional string to specify the column name in the \code{aoi}
+data which identifies seperate AOIs. Required if \code{aoi} is provided.}
 
 \item{na.action}{optional string to specify action to take if there are NA
 values in the prediction data. Defaults to \code{na.omit}.}

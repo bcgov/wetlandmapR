@@ -125,15 +125,16 @@ stack_rasters <- function(rasters,
   # part of the for loop - avoids issues in R with memory use
   # See: https://stackoverflow.com/questions/14801035/growing-a-list-with-variable-names-in-r
   rp <- vector(mode = "list", length = length(rasters))
-  rasterLUT <- data.frame(file=character(),
-                          predictor=character(),
-                          band=integer(),
-                          stringsAsFactors=FALSE)
+  rasterLUT <- data.frame(file = character(),
+                          predictor = character(),
+                          band = integer(),
+                          stringsAsFactors = FALSE)
   for (i in 1:length(rasters)) {
     # TO DO:
     # Check resolution of raster and, if target raster resolution is much
     # larger, aggregate the input raster to a similar resolution using
     # raster::aggregate
+    # ...
 
     r <- raster::brick(rasters[i])
 
@@ -150,6 +151,7 @@ stack_rasters <- function(rasters,
 
     # TO DO:
     # Need to output nodata values as -9999
+    # ...
 
     if (!aligned) {
       # Align raster to target
