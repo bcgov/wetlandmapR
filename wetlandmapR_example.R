@@ -90,7 +90,8 @@ model.out <- wetland_model(qdatafn = qdatafn,
 # Create map from model...
 #------------------------------------------------------------------------------
 
-wetland_map(model.out = model.out[[1]],
-            folder = model.out[[2]],
-            MODELfn = basename(model.out[[2]]),
-            rastLUTfn = rastLUT)
+wetland_map(model.out = model.out,
+            model.folder = "./output",
+            rastLUTfn = rastLUT,
+            aoi = aoi_polys,
+            aoi.col = "BASIN")

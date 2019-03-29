@@ -32,11 +32,12 @@ or "continuous".}
 \item{seed}{number (integer) used to initialize randomization.}
 
 \item{aoi.col}{optional string to specify the column name in the training
-data which identifies seperate AOIs. Setting this parameter means a
-seperate model object will be output each using a sub-set of training
-points defined by the values in this column. All sub-sets will be run
-unless the \code{aoi.target} parameter is specified. To run the model using
-all training points, use \code{aoi.col = NULL} (default).}
+data which identifies seperate AOIs. The values in this column must not
+contain the character "-". Setting this parameter means a seperate model
+object will be output each using a sub-set of training points defined by
+the values in this column. All sub-sets will be run unless the
+\code{aoi.target} parameter is specified. To run the model using all
+training points, use \code{aoi.col = NULL} (default).}
 
 \item{aoi.target}{optional character vector to identify which AOI to run
 the model on. If \code{aoi.target = NULL} (default), and \code{aoi.col}
@@ -45,7 +46,9 @@ target} will be appended on to the output folder name created for each AOI.}
 
 \item{MODELfn}{optional filename to use for saved model output. If
 \code{MODELfn = NULL} (default), a unique name is created automatically
-using the date and time the model is run.}
+using the date and time the model is run. If \code{aoi.col} is specified,
+each unique value in this field is appended to \code{MODELfn} for each
+model run.}
 
 \item{na.action}{optional string to specify action to take if there are NA
 values in the predictor data. Defaults to \code{na.roughfix}.}
