@@ -226,6 +226,46 @@ wetland_map <- function (model.out,
                          aoi.col = NULL,
                          na.action = "na.omit",
                          ...) {
+  # Loop through all model objects in model.out
+  for (i in 1:length(model.out)) {
+    if (is.null(aoi) & length(model.out) > 1) {
+      # Model was run with an AOI, but no AOI file provided
+      stop("Your model output contains more than 1 model object, but no AOI
+           object has been provided. Please set the aoi parameter.")
+    } else if (!is.null(aoi) & is.null(aoi.col)) {
+      stop("The aoi.col parameter is required if aoi parameter is not NULL.")
+    } else if (!is.null(aoi)) {
+      # Extract the AOI target name from the model name
+      aoi.target <- tail(strsplit(names(model.out)[i], "-")[[1]], n = 1)
+
+      # Check that the aoi.target exists in aoi object's aoi.col field
+      if (!aoi.target %in% aoi[[aoi.col,]]) {
+        stop(paste0("The AOI used for this model run (",
+                    aoi.target,
+                    ") does not appear to exist in the AOI object provided."))
+      } else {
+        # TO DO:
+        # Clip rasters (from rastLUT) to AOI and save in temp folder
+        # ...
+
+        # TO DO:
+        # Generate temp rastLUT using AOI rasters
+        # ...
+      }
+
+    }
+
+    MODELfn <- names(model.out)[i]
+    model.folder.out <- file.path(model.folder, MODELfn)
+
+    # model.mapmake() creates an ascii text file and an imagine .img file of
+    # predictions for each map pixel.
+    model.mapmake(model.obj = model.out[i],
+                  folder = model.folder.out,
+                  MODELfn = MODELfn,
+                  rastLUTfn = rastLUTfn,
+                  na.action = na.action,
+                  ...)
 
   # Read rastLUTfn if not a dataframe
   if (!is.data.frame(rastLUTfn)) {

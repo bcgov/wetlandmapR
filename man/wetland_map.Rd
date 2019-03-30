@@ -25,6 +25,13 @@ using an AOI.}
 \item{aoi.col}{optional string to specify the column name in the \code{aoi}
 data which identifies seperate AOIs. Required if \code{aoi} is provided.}
 
+\item{aoi}{optional SpatialPolygon object that was used to intersect with
+input points. This parameter is required if \code{model.out} was generated
+using an AOI.}
+
+\item{aoi.col}{optional string to specify the column name in the \code{aoi}
+data which identifies seperate AOIs. Required if \code{aoi} is provided.}
+
 \item{na.action}{optional string to specify action to take if there are NA
 values in the prediction data. Defaults to \code{na.omit}.}
 
