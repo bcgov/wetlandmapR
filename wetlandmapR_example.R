@@ -4,14 +4,15 @@ rm(list=ls(all=TRUE)) #start with empty workspace
 # Raster data set-up...
 #------------------------------------------------------------------------------
 # SAGA processing
-create_dem_products("../../testdata/dem.tif",
-                    "data")
+create_dem_products(dem = "../../testdata/dem.tif",
+                    outdir = "data")
 
 # List the output from create_dem_products... this will form the input to the
 # raster stack
 raster_list <- list.files("data", "sdat$", full.names = TRUE)
 
-# Add Landsat and Sentinel to the list
+# Add Landsat and Sentinel to the list (and any other rasters to be included in
+# the stack)
 raster_list <- append(raster_list, "../../testdata/landsat.tif")
 raster_list <- append(raster_list, "../../testdata/sentinel2.tif")
 
@@ -21,40 +22,60 @@ raster_list <- append(raster_list,
                                  ".img$", full.names = TRUE))
 
 # Stack all raster inputs
-raster_stack <- stack_rasters(raster_list,
-                              "../../testdata/dem.tif",
-                              "../../testdata/raster_stack")
+raster_stack <- stack_rasters(rasters = raster_list,
+                              target_raster = "../../testdata/dem.tif",
+                              outdir = "../../testdata/raster_stack",
+                              rastLUTfn = "../../testdata/raster_stack/rastLUT.csv")
+
+# If you already have a folder containing rasters that have been aligned to the
+# same grid, i.e. previous output of stack_rasters(), you can use those rasters
+# to create a RasterStack object and rastLUT, e.g:
+#   raster_list <- list.files("../../testdata/raster_stack", "img$", full.names = TRUE)
+#   raster_stack <- stack_rasters(rasters = raster_list,
+#                                 aligned = TRUE,
+#                                 rastLUTfn = "../../testdata/raster_stack/rastLUT.csv")
 
 #------------------------------------------------------------------------------
 # Add raster values to training points...
 #------------------------------------------------------------------------------
 # Shapefile points:
-input_points <- raster::shapefile("../../testdata/training_pts.shp")
+input_points <- raster::shapefile("../../testdata/training_points.shp")
 
 # File Geodatabase points:
-#input_points <- rgdal::readOGR(dsn = "../../WillistonWetlands.gdb",
-#                               layer = "AttributedPoints_FWCP_Master_20April2018")
+#   input_points <- rgdal::readOGR(dsn = "../../WillistonWetlands.gdb",
+#                                  layer = "AttributedPoints_FWCP_Master_20April2018")
 
-# Add raster values to training points
-qdatafn <- "../../testdata/training_pts.csv"
+# AOI layer:
+aoi_polys <- raster::shapefile("../../testdata/dinosaur_aoi_basins.shp")
+
+# Add raster values to training points; attribute points by AOI
+qdatafn <- "../../testdata/training_points_attd.csv"
 input_points_withvalues <- grid_values_at_sp(raster_stack,
                                              input_points,
-                                             qdatafn)
+                                             filename = qdatafn,
+                                             aoi = aoi_polys)
+
+
+#------------------------------------------------------------------------------
+# Setup predictor list and raster LUT...
+#------------------------------------------------------------------------------
+rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv",
+                    header = FALSE,
+                    stringsAsFactors = FALSE)
+
+# NOTE:
+# Edit rastLUT (or edit the .csv created by stack_rasters() before reading it) to remove any rows that aren't required.
+# i.e. exclude rows 42 to 43
+rastLUT <- rastLUT[-(42:43),]
 
 # Character vector of the predictor names, used as input to the model
-predList <- names(r_stack)
-# Or, if using a previously generated set of attributed training points...
-# qdata <- read.csv(qdatafn)
-# predList <- names(qdata)
-predList
+predList <- rastLUT[, 2]
 
-# Remove any values from predList that aren't to be used as predictors
-predList <- predList[!predList %in% c("sentinel2.14", "sentinel2.15")]
 
 #------------------------------------------------------------------------------
 # Run model and diagnostics...
 #------------------------------------------------------------------------------
-out.list <- wetland_model(qdatafn = qdatafn,
+model.out <- wetland_model(qdatafn = qdatafn,
                           model.type = "RF",
                           model.folder = "./output",
                           unique.rowname = "OBJECTID",
@@ -62,19 +83,15 @@ out.list <- wetland_model(qdatafn = qdatafn,
                           predFactor = FALSE,
                           response.name = "T_W_Class",
                           response.type = "categorical",
-                          seed = 44)
+                          seed = 44,
+                          response.target = c("Wb", "Wf", "Ws"),
+                          aoi.col = "BASIN")
 
 #------------------------------------------------------------------------------
-# Create map from model...
+# Create map(s) from model...
 #------------------------------------------------------------------------------
-
-# TO DO:
-# Create function to generate rasterLUT... maybe output from stack_rasters...
-# return list of outfiles[i]...
-
-rastLUT <- "../../testdata/raster_stack/rastLUT.csv"
-
-wetland_map(model.obj = out.list[[1]],
-            folder = out.list[[2]],
-            MODELfn = basename(out.list[[2]]),
-            rastLUTfn = rastLUT)
+wetland_map(model.out = model.out,
+            model.folder = "./output",
+            rastLUTfn = rastLUT,
+            aoi = aoi_polys,
+            aoi.col = "BASIN")
