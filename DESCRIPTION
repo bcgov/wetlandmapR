@@ -1,19 +1,24 @@
-
 Package: wetlandmapR
 Title: Mapping Wetland Ecosystems
-Version: 0.0.0.1000
-Authors@R: 
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "Deepa", 
+           family = "Filatow",
+           role = "cre",
+           email = "deepa.filatow@gov.bc.ca"),
     person(given = "Simon",
            family = "Casley",
-           role = c("aut", "cre"),
-           email = "scasley@ccl.ca")
+           role = "aut",
+           email = "scasley@ccl.ca"))
 Description: Mapping wetland ecosystems using data driven R statistical methods 
-    like Random Forests and open source GIS.
-License: Apache
+    like Random Forests and open source GIS. Prepares raster layers and 
+    training data for input into ModelMap. Uses SAGA-GIS (v2.3+) to create 
+    raster layers from an input DEM.
+License: Apache License (== 2.0) | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
-    RSAGA,
+    RSAGA (>= 1.3.0),
     raster,
-    ModelMap,
+    ModelMap (>= 3.4.0.1),
 RoxygenNote: 6.1.1
