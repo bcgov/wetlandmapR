@@ -17,8 +17,9 @@ Description: Mapping wetland ecosystems using data driven R statistical methods
 License: Apache License (== 2.0) | file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports:
+Depends:
     RSAGA (>= 1.3.0),
     raster,
     ModelMap (>= 3.4.0.1),
+SystemRequirements: SAGA-GIS (v2.3+)
 RoxygenNote: 6.1.1

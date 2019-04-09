@@ -22,5 +22,41 @@ doesn't intersect any AOI polygon it will be excluded from the output.}
 SpatialPoints* object with values added to it's data frame
 }
 \description{
-Extract raster values at points
+Adds cell values from a Raster* object as attributes to a SpatialPoints*
+object.
+}
+\details{
+If the Raster* object contains multiple bands or layers, an attribute for
+band/layer will be added to the points. Raster names are used as attribute
+column names; for multiband rasters, the column name is
+\code{<name>.<band number>}.
+
+An optional polygon Area of Interest (AOI) object can be provided which will
+intersect the points with the AOI polygons, adding the AOI attributes to the
+points.
+
+The optional output CSV can be used as input training data for
+\code{\link{wetland_model}}. Raster layer names will be used as the column
+names in the output.
+}
+\examples{
+\dontrun{
+# Shapefile points:
+input_points <- raster::shapefile("data/training_points.shp")
+
+# AOI layer:
+aoi_polys <- raster::shapefile("data/aoi.shp")
+
+# Stack existing, aligned, rasters
+raster_list <- c("output/ELEV.img", "output/SLOPE.img", "output/ASPECT.img")
+raster_stack <- stack_rasters(rasters = raster_list,
+                              aligned = TRUE)
+
+# Add raster values to training points; attribute points by AOI
+qdatafn <- "../../testdata/training_points_attd.csv"
+input_points_withvalues <- grid_values_at_sp(raster_stack,
+                                            input_points,
+                                            filename = qdatafn,
+                                            aoi = aoi_polys)
+}
 }

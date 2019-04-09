@@ -2,7 +2,7 @@
 % Please edit documentation in R/modelmap_processing.R
 \name{wetland_model}
 \alias{wetland_model}
-\title{Run model for wetland prediction}
+\title{Wetland prediction model}
 \usage{
 wetland_model(qdatafn, model.type, model.folder, unique.rowname, predList,
   predFactor, response.name, response.type, seed, response.target = NULL,
@@ -58,13 +58,52 @@ model run.}
 \item{na.action}{optional string to specify action to take if there are NA
 values in the predictor data. Defaults to \code{na.roughfix}.}
 
-\item{...}{any other parameters to pass to ModelMap::model.build.}
+\item{...}{any other parameters to pass to \code{\link[ModelMap]{model.build}}.}
 }
 \value{
-list containing model object from ModelMap::model.build for each AOI;
-  list elements are named by the output model folder string (including AOI
-  target name if aoi.target is provided).
+list containing model object from \code{\link[ModelMap]{model.build}}
+  for each AOI; list elements are named by the output model folder string
+  (including AOI target name if aoi.target is provided).
 }
 \description{
-Run model for wetland prediction
+This function runs \code{\link[ModelMap]{model.build}} to build a wetland
+model using training data attributed with predictor values, such as from
+\code{\link{grid_values_at_sp}}.
+}
+\details{
+If an AOI has been used to prepare the training data, the model can be run
+for each seperate AOI by using the \code{aoi.col} parameter, or specific AOIs
+by also using the \code{aoi.target} parameter.
+
+Response targets can also be provided, so the input training data is
+restricted to only those target response points.
+
+As well as building the model, this function produces diagnostics by running
+\code{\link[ModelMap]{model.diagnostics}}.
+}
+\examples{
+\dontrun{
+# RastLUT:
+rastLUT <- read.csv("data/rastLUT.csv",
+                    header = FALSE,
+                    stringsAsFactors = FALSE)
+
+# Character vector of the predictor names, used as input to the model:
+predList <- rastLUT[, 2]
+
+# Training data, that has been intersected with an AOI layer:
+qdatafn <- "data/training_points_attd.csv"
+
+model.out <- wetland_model(qdatafn = qdatafn,
+                           model.type = "RF",
+                           model.folder = "./output",
+                           unique.rowname = "OBJECTID",
+                           predList = predList,
+                           predFactor = FALSE,
+                           response.name = "T_W_Class",
+                           response.type = "categorical",
+                           seed = 44,
+                           response.target = c("Wb", "Wf", "Ws"),
+                           aoi.col = "BASIN")
+}
 }
