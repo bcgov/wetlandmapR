@@ -1,5 +1,18 @@
-
-#' Run model for wetland prediction
+#' Wetland prediction model
+#'
+#' This function runs \code{\link[ModelMap]{model.build}} to build a wetland
+#' model using training data attributed with predictor values, such as from
+#' \code{\link{grid_values_at_sp}}.
+#'
+#' If an AOI has been used to prepare the training data, the model can be run
+#' for each seperate AOI by using the \code{aoi.col} parameter, or specific AOIs
+#' by also using the \code{aoi.target} parameter.
+#'
+#' Response targets can also be provided, so the input training data is
+#' restricted to only those target response points.
+#'
+#' As well as building the model, this function produces diagnostics by running
+#' \code{\link[ModelMap]{model.diagnostics}}.
 #'
 #' @param qdatafn training data filename.
 #' @param model.type model type to use (string). One of "RF", "QRF", or "CF".
@@ -35,10 +48,37 @@
 #'   model run.
 #' @param na.action optional string to specify action to take if there are NA
 #'   values in the predictor data. Defaults to \code{na.roughfix}.
-#' @param ... any other parameters to pass to ModelMap::model.build.
-#' @return list containing model object from ModelMap::model.build for each AOI;
-#'   list elements are named by the output model folder string (including AOI
-#'   target name if aoi.target is provided).
+#' @param ... any other parameters to pass to \code{\link[ModelMap]{model.build}}.
+#'
+#' @return list containing model object from \code{\link[ModelMap]{model.build}}
+#'   for each AOI; list elements are named by the output model folder string
+#'   (including AOI target name if aoi.target is provided).
+#'
+#' @examples
+#' \dontrun{
+#' # RastLUT:
+#' rastLUT <- read.csv("data/rastLUT.csv",
+#'                     header = FALSE,
+#'                     stringsAsFactors = FALSE)
+#'
+#' # Character vector of the predictor names, used as input to the model:
+#' predList <- rastLUT[, 2]
+#'
+#' # Training data, that has been intersected with an AOI layer:
+#' qdatafn <- "data/training_points_attd.csv"
+#'
+#' model.out <- wetland_model(qdatafn = qdatafn,
+#'                            model.type = "RF",
+#'                            model.folder = "./output",
+#'                            unique.rowname = "OBJECTID",
+#'                            predList = predList,
+#'                            predFactor = FALSE,
+#'                            response.name = "T_W_Class",
+#'                            response.type = "categorical",
+#'                            seed = 44,
+#'                            response.target = c("Wb", "Wf", "Ws"),
+#'                            aoi.col = "BASIN")
+#' }
 wetland_model <- function(qdatafn,
                           model.type,
                           model.folder,
@@ -205,10 +245,29 @@ wetland_model <- function(qdatafn,
 
 #' Wetland map production
 #'
+#' This function runs \code{\link[ModelMap]{model.mapmake}} to generate raster
+#' prediction surfaces using model output from \code{\link{wetland_model}}.
+#'
+#' The name of the model object, output from \code{\link{wetland_model}} is used
+#' to determine the output folder where the ERDAS Imagine .img output raster is
+#' saved.
+#'
+#' If an AOI was used to generate the model object(s), the same AOI
+#' SpatialPolygon object can be provided as input to this function so that
+#' the output raster is produced for the corresponding AOI. If a single model
+#' object has been generated for a specific AOI, that model can be applied to a
+#' larger extent by not providing an AOI input to this function. If an AOI is
+#' provided, the rasters listed in \code{rastLUT} are clipped to the AOI
+#' polygon used to generate the model.
+#'
+#' Temporary rasters and temporary rastLUTs specific to each AOI are saved in
+#' the output folder; these temporary files are deleted once the prediction
+#' surface has been created.
+#'
 #' @param model.out list object returned from \code{wetland_model}. List
-#'   contains model object(s) from ModelMap::model.build for each AOI;
-#'   list elements are named by the output model folder string (including AOI
-#'   target name if aoi.target is provided).
+#'   contains model object(s) from \code{\link[ModelMap]{model.build}} for each
+#'   AOI; list elements are named by the output model folder string (including
+#'   AOI target name if aoi.target is provided).
 #' @param model.folder folder where the output from \code{wetland_model} was
 #'   created. Same as \code{model.folder} input to \code{wetland_model}.
 #' @param rastLUTfn filename of a .csv or dataframe of a rastLUT.
@@ -219,7 +278,45 @@ wetland_model <- function(qdatafn,
 #'   data which identifies seperate AOIs. Required if \code{aoi} is provided.
 #' @param na.action optional string to specify action to take if there are NA
 #'   values in the prediction data. Defaults to \code{na.omit}.
-#' @param ... any other parameters to pass to ModelMap::model.mapmake.
+#' @param ... any other parameters to pass to \code{ModelMap::model.mapmake}.
+#'
+#' @return NULL
+#'
+#' @examples
+#' \dontrun{
+#' # RastLUT:
+#' rastLUT <- read.csv("data/rastLUT.csv",
+#'                     header = FALSE,
+#'                     stringsAsFactors = FALSE)
+#'
+#' # Character vector of the predictor names, used as input to the model:
+#' predList <- rastLUT[, 2]
+#'
+#' # Training data, that has been intersected with an AOI layer:
+#' qdatafn <- "data/training_points_attd.csv"
+#'
+#' # Run the model
+#' model.out <- wetland_model(qdatafn = qdatafn,
+#'                            model.type = "RF",
+#'                            model.folder = "./output",
+#'                            unique.rowname = "OBJECTID",
+#'                            predList = predList,
+#'                            predFactor = FALSE,
+#'                            response.name = "T_W_Class",
+#'                            response.type = "categorical",
+#'                            seed = 44,
+#'                            response.target = c("Wb", "Wf", "Ws"),
+#'                            aoi.col = "BASIN")
+#'
+#' # AOI layer:
+#' aoi_polys <- raster::shapefile("data/aoi.shp")
+#'
+#' wetland_map(model.out = model.out,
+#'             model.folder = "./output",
+#'             rastLUTfn = rastLUT,
+#'             aoi = aoi_polys,
+#'             aoi.col = "BASIN")
+#' }
 wetland_map <- function (model.out,
                          model.folder,
                          rastLUTfn,
@@ -227,50 +324,10 @@ wetland_map <- function (model.out,
                          aoi.col = NULL,
                          na.action = "na.omit",
                          ...) {
-  # Loop through all model objects in model.out
-  for (i in 1:length(model.out)) {
-    if (is.null(aoi) & length(model.out) > 1) {
-      # Model was run with an AOI, but no AOI file provided
-      stop("Your model output contains more than 1 model object, but no AOI
-           object has been provided. Please set the aoi parameter.")
-    } else if (!is.null(aoi) & is.null(aoi.col)) {
-      stop("The aoi.col parameter is required if aoi parameter is not NULL.")
-    } else if (!is.null(aoi)) {
-      # Extract the AOI target name from the model name
-      aoi.target <- tail(strsplit(names(model.out)[i], "-")[[1]], n = 1)
-
-      # Check that the aoi.target exists in aoi object's aoi.col field
-      if (!aoi.target %in% aoi[[aoi.col,]]) {
-        stop(paste0("The AOI used for this model run (",
-                    aoi.target,
-                    ") does not appear to exist in the AOI object provided."))
-      } else {
-        # TO DO:
-        # Clip rasters (from rastLUT) to AOI and save in temp folder
-        # ...
-
-        # TO DO:
-        # Generate temp rastLUT using AOI rasters
-        # ...
-      }
-
-    }
-
-    MODELfn <- names(model.out)[i]
-    model.folder.out <- file.path(model.folder, MODELfn)
-
-    # model.mapmake() creates an ascii text file and an imagine .img file of
-    # predictions for each map pixel.
-    model.mapmake(model.obj = model.out[i],
-                  folder = model.folder.out,
-                  MODELfn = MODELfn,
-                  rastLUTfn = rastLUTfn,
-                  na.action = na.action,
-                  ...)
 
   # Read rastLUTfn if not a dataframe
   if (!is.data.frame(rastLUTfn)) {
-    rastLUT <- read.csv("../../testdata/raster_stack/rastLUT.csv",
+    rastLUT <- read.csv(rastLUTfn,
                         header = FALSE,
                         stringsAsFactors = FALSE)
   } else {
@@ -284,6 +341,7 @@ wetland_map <- function (model.out,
   # to clip rasters to AOIs
   if (!is.null(aoi)) {
     rs <- stack_rasters(unique(rastLUT[ ,1]), aligned = TRUE)
+
     # Remove any layers/bands not in the rastLUT
     rs <- raster::subset(rs, rastLUT[ ,2])
   }
@@ -315,8 +373,8 @@ wetland_map <- function (model.out,
                     ") does not exist in the AOI object provided."))
 
       } else {
-
         # Clip rasters (from rastLUT) to AOI and save in temp folder
+
         # Extract AOI target poly
         aoi.target.shp <- aoi[aoi[[aoi.col]] == aoi.target,]
 
