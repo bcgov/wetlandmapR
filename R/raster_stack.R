@@ -35,6 +35,7 @@
 #' create_dem_products(dem = "data/dem.tif", outdir = "output",
 #'                     products = c("SLOPE", "CAREA"))
 #' }
+#' @export
 create_dem_products <- function(dem, outdir, products = NULL) {
   env <- RSAGA::rsaga.env()
 
@@ -164,6 +165,7 @@ create_dem_products <- function(dem, outdir, products = NULL) {
 #' raster_stack_2 <- stack_rasters(rasters = raster_list,
 #'                                 aligned = TRUE)
 #' }
+#' @export
 stack_rasters <- function(rasters,
                           aligned = FALSE,
                           target_raster = NULL,
@@ -303,6 +305,7 @@ stack_rasters <- function(rasters,
 #'                                             filename = qdatafn,
 #'                                             aoi = aoi_polys)
 #' }
+#' @export
 grid_values_at_sp <- function(x, y,
                               filename = NULL,
                               aoi = NULL) {

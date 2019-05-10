@@ -79,6 +79,7 @@
 #'                            response.target = c("Wb", "Wf", "Ws"),
 #'                            aoi.col = "BASIN")
 #' }
+#' @export
 wetland_model <- function(qdatafn,
                           model.type,
                           model.folder,
@@ -317,6 +318,7 @@ wetland_model <- function(qdatafn,
 #'             aoi = aoi_polys,
 #'             aoi.col = "BASIN")
 #' }
+#' @export
 wetland_map <- function (model.out,
                          model.folder,
                          rastLUTfn,

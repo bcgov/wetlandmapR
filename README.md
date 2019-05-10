@@ -27,7 +27,7 @@ This function runs `ModelMap::model.mapmake` to generate raster prediction surfa
 ## Installation
 Get the latest version from GitHub with:
 ```r
-devtools::install_github("bcgov/wetlandmapR", dependencies = TRUE)
+devtools::install_github("bcgov/wetlandmapR")
 ```
 
 ## Examples
