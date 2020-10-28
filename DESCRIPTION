@@ -22,4 +22,4 @@ Depends:
     raster,
     ModelMap (>= 3.4.0.1),
 SystemRequirements: SAGA-GIS (v2.3+)
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
