@@ -38,26 +38,26 @@
 #' @export
 create_dem_products <- function(dem, outdir, products = NULL) {
   env <- RSAGA::rsaga.env()
-
+  
   # Convert DEM to SAGA grid
   dem.r <- raster::raster(dem)
   names(dem.r) <- "ELEV"
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
   RSAGA::rsaga.import.gdal(in.grid=dem,out.grid=dem.sgrd)
-
+  
   if (is.null(products)) {
     products <- c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN", "CPROF",
                   "TOPOWET", "CAREA")
   } else {
     products <- toupper(products)
   }
-
+  
   products.out <- file.path(outdir, products)
   raster::extension(products.out) <- "sgrd"
-
+  
   for (i in 1:length(products)) {
     p <- products[i]
-
+    
     if (p == "SLOPE") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
                                   out.slope = products.out[i],
@@ -173,9 +173,9 @@ stack_rasters <- function(rasters,
   } else {
     t <- raster::raster(target_raster)
   }
-
+  
   files <- basename(rasters)
-
+  
   if (is.null(outdir)) {
     outfiles <- files
     outfiles[] <- ""
@@ -183,7 +183,7 @@ stack_rasters <- function(rasters,
     outfiles <- file.path(outdir, files)
     raster::extension(outfiles) <- "img"
   }
-
+  
   # Create the list, of correct length, first rather than appending as
   # part of the for loop - avoids issues in R with memory use
   # See: https://stackoverflow.com/questions/14801035/growing-a-list-with-variable-names-in-r
@@ -198,9 +198,9 @@ stack_rasters <- function(rasters,
     # larger, aggregate the input raster to a similar resolution using
     # raster::aggregate
     # ...
-
+    
     r <- raster::brick(rasters[i])
-
+    
     if (is.na(raster::crs(r)) | is.null(raster::crs(r))) {
       r.prj <- rasters[i]
       raster::extension(r.prj) <- "prj"
@@ -211,11 +211,11 @@ stack_rasters <- function(rasters,
         stop(paste0(rasters[i], " has no defined CRS"))
       }
     }
-
+    
     # TO DO:
     # Need to output nodata values as -9999; required for ModelMap.
     # ...
-
+    
     if (!aligned) {
       # Align raster to target
       rp[[i]] <- raster::projectRaster(r, t,
@@ -225,7 +225,7 @@ stack_rasters <- function(rasters,
     } else {
       rp[[i]] <- r
     }
-
+    
     # Add rows to rastLUT
     for (b in 1:raster::nbands(r)) {
       # If no output .img files are being saved, add the input raster filename
@@ -241,7 +241,7 @@ stack_rasters <- function(rasters,
                                     band = b))
     }
   }
-
+  
   # Write rasterLUT to csv
   if (!is.null(rastLUTfn)) {
     write.table(rasterLUT, rastLUTfn,
@@ -249,7 +249,7 @@ stack_rasters <- function(rasters,
                 col.names = FALSE,
                 sep=",")
   }
-
+  
   return(raster::stack(rp))
 }
 
@@ -306,19 +306,26 @@ stack_rasters <- function(rasters,
 grid_values_at_sp <- function(x, y,
                               filename = NULL,
                               aoi = NULL) {
-  # Extract raster cell values for each point and add them as an attribute
-  shp.values <- raster::extract(x, y, sp = TRUE)
-
-  # If AOI is provided, intersect AOI with points
-  if (!is.null(aoi)) {
-    shp.values.aoi <- raster::intersect(shp.values, aoi)
-  } else {
-    shp.values.aoi <- shp.values
+  
+  if(sf::st_crs(y)==sf::st_crs(aoi))
+  {
+    
+    # Extract raster cell values for each point and add them as an attribute
+    shp.values <- raster::extract(x, y, sp = TRUE)
+    
+    # If AOI is provided, intersect AOI with points
+    if (!is.null(aoi)) {
+      shp.values.aoi <- raster::intersect(shp.values, aoi)
+    } else {
+      shp.values.aoi <- shp.values
+    }
+    
+    if (!is.null(filename)) {
+      utils::write.csv(shp.values.aoi, filename)
+    }
+    return(shp.values.aoi)
+  }else{
+    cat("Sample points and AOI CRS do not match...")
   }
-
-  if (!is.null(filename)) {
-    write.csv(shp.values.aoi, filename)
-  }
-  return(shp.values.aoi)
 }
 
