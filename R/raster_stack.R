@@ -45,9 +45,16 @@ create_dem_products <- function(dem, outdir, products = NULL) {
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
   RSAGA::rsaga.import.gdal(in.grid=dem,out.grid=dem.sgrd)
   
+  dem.filled<-file.path(outdir, "ELEV_NoSink.sgrd")
+  RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',module=4,param=list(ELEV=dem.sgrd,FILLED=dem.filled), env = env)
+  
+  RSAGA::rsaga.grid.calculus(c(dem.sgrd,dem.filled),file.path(outdir,"SINKS.sgrd"),~abs(a-b)>0)
+  
+  dem.sgrd <- dem.filled
+  
   if (is.null(products)) {
     products <- c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN", "CPROF",
-                  "TOPOWET", "CAREA")
+                  "TOPOWET", "CAREA","SINKS")
   } else {
     products <- toupper(products)
   }
@@ -175,6 +182,7 @@ stack_rasters <- function(rasters,
   }
   
   files <- basename(rasters)
+  lyr_names<-sub(pattern = "(.*)\\..*$", replacement = "\\1",files)
   
   if (is.null(outdir)) {
     outfiles <- files
@@ -192,6 +200,7 @@ stack_rasters <- function(rasters,
                           predictor = character(),
                           band = integer(),
                           stringsAsFactors = FALSE)
+  
   for (i in 1:length(rasters)) {
     # TO DO:
     # Check resolution of raster and, if target raster resolution is much
@@ -223,23 +232,24 @@ stack_rasters <- function(rasters,
                                        filename = outfiles[i],
                                        overwrite = TRUE)
     } else {
+      names(r)<-lyr_names[i]
       rp[[i]] <- r
     }
     
     # Add rows to rastLUT
-    for (b in 1:raster::nbands(r)) {
-      # If no output .img files are being saved, add the input raster filename
-      # to the rastLUT
-      if (is.null(outdir)) {
-        file = normalizePath(rasters[i], winslash = "/")
-      } else {
-        file = normalizePath(outfiles[i], winslash = "/")
-      }
-      rasterLUT <- rbind(rasterLUT,
-                         data.frame(file = file,
-                                    predictor = names(r)[b],
-                                    band = b))
+    
+    # If no output .img files are being saved, add the input raster filename
+    # to the rastLUT
+    if (is.null(outdir)) {
+      file = normalizePath(rasters[i], winslash = "/")
+    } else {
+      file = normalizePath(outfiles[i], winslash = "/")
     }
+    rasterLUT <- rbind(rasterLUT,
+                       data.frame(file = file,
+                                  predictor = lyr_names[i],
+                                  band = i))
+    
   }
   
   # Write rasterLUT to csv
