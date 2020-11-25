@@ -4,8 +4,9 @@ library(wetlandmapR)
 library(rgeos)
 library(rgdal)
 library(tidyverse)
-
-
+library(bcmaps)
+library(raster)
+library(sf)
 #------------------------------------------------------------------------------
 # Raster data set-up...
 #------------------------------------------------------------------------------
@@ -16,8 +17,8 @@ set.seed(44)
 out_dir<-paste(tempdir(),"/wetlandmapR_expl",sep="")
 dir.create(out_dir)
 
-#Specify a target digital elevation model (DEM) 
-target_dem<-system.file("extdata", "DEM.tif", package = "wetlandmapR")
+#Get digital elevation model DEM
+target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
 
 #Create SAGA elevation derivatives 
 create_dem_products(dem = target_dem, outdir = out_dir)
@@ -40,27 +41,25 @@ plot(raster_stack)
 # Add raster values to training points...
 #------------------------------------------------------------------------------
 
-#Load training data as sf object 
-training_points<-sf::st_read(system.file('extdata', 'TrainingPoints.shp', package = 'wetlandmapR'))
+#Load training data as st  
+training_points<-st_read(system.file('extdata', 'TrainingPoints.shp', package = 'wetlandmapR'))
 
-#Load AOIs as sf object
-aoi_polys<-sf::st_read(system.file('extdata', 'Assessment_Watersheds.shp', package = 'wetlandmapR')) %>% 
-  sf::st_transform(crs=sf::st_crs(training_points))
+#Load BEC zones from bcmaps as AOIs
+aoi_polys<-bec() %>% st_crop(training_points)
 
 
-aoi_polys$GRP<-sample(c(1,2),nrow(aoi_polys),replace=T)
+aoi_polys<-as_Spatial(aoi_polys)
 
-#Get only training point intersecting AOIs
-training_points<-training_points %>% 
-  sf::st_intersection(aoi_polys)
 
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
 
 #Attribute training points with values at intersection with co-variate layers
-training_points <- grid_values_at_sp(x=raster_stack,
-                                     y=training_points,
-                                     filename = attributed_csv,
-                                     aoi = aoi_polys)
+grid_values_at_sp(x=raster_stack,
+                  y=training_points,
+                  filename = attributed_csv,
+                  aoi = aoi_polys)
+
+
 
 #------------------------------------------------------------------------------
 # Setup predictor list and raster LUT...
@@ -75,6 +74,7 @@ rastLUT <- read.csv(file.path(out_dir,'rastLUT.csv'),
 predList <- rastLUT[,2]
 
 
+#Create an output directory within 'out_dir'
 dir.create(file.path(out_dir,"output"))
 
 
@@ -82,6 +82,7 @@ dir.create(file.path(out_dir,"output"))
 # Run model and diagnostics...
 #------------------------------------------------------------------------------
 
+#Fit a random forest model 
 model.out <- wetland_model(qdatafn = attributed_csv,
                            model.type = "RF",
                            model.folder = file.path(out_dir,"output"),
@@ -92,14 +93,18 @@ model.out <- wetland_model(qdatafn = attributed_csv,
                            response.type = "categorical",
                            seed = 44,
                            response.target = as.vector(unique(training_points$T_W_Class)),
-                           aoi.col = "GRP")
+                           aoi.col = "ZONE")
 
 #------------------------------------------------------------------------------
 # Create map(s) from model...
 #------------------------------------------------------------------------------
 
+#Map random forest results 
 wetland_map(model.out = model.out,
             model.folder = file.path(out_dir,"output"),
             rastLUTfn = rastLUT,
             aoi = aoi_polys,
-            aoi.col = "GRP")
+            aoi.col = "ZONE")
+
+
+
