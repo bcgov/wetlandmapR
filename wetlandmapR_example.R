@@ -106,5 +106,26 @@ wetland_map(model.out = model.out,
             aoi = aoi_polys,
             aoi.col = "ZONE")
 
+#------------------------------------------------------------------------------
+# Set up a GRASS-GIS Environment for attributing upstream basin stats...
+#------------------------------------------------------------------------------
+
+#!!Change for current environment!! 
+gisbase<-'/usr/lib/grass78/'
+
+lyr_lst<-list()
+lyr_names<-c()
+for(lyr in  c(1:dim(raster_stack)[3]))
+{
+  lyr_lst[[lyr]]<-raster(rastLUT[lyr,1])
+  lyr_names[lyr]<-rastLUT[lyr,2]
+}
+
+
+set_grass_env(gisbase=gisbase,
+              DEM=raster(target_dem),
+              lyr_list=lyr_lst,
+              lyr_names=lyr_names,
+              acc_thresh = 1000)
 
 

@@ -36,7 +36,7 @@
 set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL)
 {
   #Set up temporary GRASS Environment, must provide gisBase, e.g., gisBase="/usr/lib/grass78"#
-  rgrass7::initGRASS(gisBase = gisBase,
+  rgrass7::initGRASS(gisBase = gisbase,
                      home=tempdir(),
                      override = T,
                      remove_GISRC=T)
@@ -57,7 +57,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   #Write each disturbance layer to GRASS environment 
   for(lyr in c(1:length(lyr_list)))
   {
-    rgrass7::writeRAST(as(lyr_list[lyr],"SpatialGridDataFrame"),
+    rgrass7::writeRAST(as(lyr_list[[lyr]],"SpatialGridDataFrame"),
                        lyr_names[lyr],
                        ignore.stderr = T,
                        overwrite = T)
