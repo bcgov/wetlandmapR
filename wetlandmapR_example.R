@@ -137,10 +137,9 @@ set_grass_env(gisbase=gisbase,
               acc_thresh = 1000)
 
 
-pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),100),]
+pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),500),]
 
-basin_stats<-run_basin_stats(nodes = 10,
-                             pour_pnts = pour_pnts,
+basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
                              covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
                              stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'))
 
