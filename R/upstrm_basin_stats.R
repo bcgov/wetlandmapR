@@ -129,7 +129,7 @@ run_basin_stats<-function(procs=1,proc_type='FORK',pour_pnts,covar_rast,stat_vec
   cl<-parallel::makeCluster(procs,type=proc_type)
   doParallel::registerDoParallel(cl)
   
-  basin_stats_lst<-doParallel::foreach(i=c(1:nrow(pour_pnts))) %dopar% delin_a_basin(pour_pnts$X[i],pour_pnts$Y[i],pour_pnts$UID[i],covar_rast,stat_vect)
+  basin_stats_lst<-foreach::foreach(i=c(1:nrow(pour_pnts))) %dopar% delin_a_basin(pour_pnts$X[i],pour_pnts$Y[i],pour_pnts$UID[i],covar_rast,stat_vect)
   
   basin_stats<-c()
   
