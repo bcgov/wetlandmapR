@@ -124,12 +124,12 @@ upstream_basin_stats<-function(x,y,uid,covar_rast,stat_vec)
 #' defined in 'covar_rast' over each pour point provided in 'pour_pnts', along with
 #' the pour point UID.
 #' @export
-run_basin_stats<-function(procs=1,proc_type='FORK',pour_pnts,covar_rast,stat_vect)
+run_basin_stats<-function(nodes=1,pour_pnts,covar_rast,stat_vect)
 {
-  cl<-parallel::makeCluster(procs,type=proc_type)
+  cl<-parallel::makeCluster(nodes)
   doParallel::registerDoParallel(cl)
   
-  basin_stats_lst<-foreach::foreach(i=c(1:nrow(pour_pnts))) %dopar% delin_a_basin(pour_pnts$X[i],pour_pnts$Y[i],pour_pnts$UID[i],covar_rast,stat_vect)
+  basin_stats_lst<-foreach::foreach(i=c(1:nrow(pour_pnts))) %dopar% upstream_basin_stats(pour_pnts$X[i],pour_pnts$Y[i],pour_pnts$UID[i],covar_rast,stat_vect)
   
   basin_stats<-c()
   

@@ -7,6 +7,7 @@ library(tidyverse)
 library(bcmaps)
 library(raster)
 library(sf)
+library(doParallel)
 #------------------------------------------------------------------------------
 # Raster data set-up...
 #------------------------------------------------------------------------------
@@ -122,10 +123,25 @@ for(lyr in  c(1:dim(raster_stack)[3]))
 }
 
 
+#Create a data frame of pour points 
+pour_pnts<-as.data.frame(raster(target_dem),xy=T)
+pour_pnts<-pour_pnts[complete.cases(pour_pnts),]
+colnames(pour_pnts)<-c('X','Y','UID')
+pour_pnts$UID<-c(1:nrow(pour_pnts))
+
+
 set_grass_env(gisbase=gisbase,
               DEM=raster(target_dem),
               lyr_list=lyr_lst,
               lyr_names=lyr_names,
               acc_thresh = 1000)
+
+
+pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),100),]
+
+basin_stats<-run_basin_stats(nodes = 10,
+                             pour_pnts = pour_pnts,
+                             covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
+                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'))
 
 
