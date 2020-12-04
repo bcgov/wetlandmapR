@@ -94,7 +94,7 @@ model.out <- wetland_model(qdatafn = attributed_csv,
                            response.type = "categorical",
                            seed = 44,
                            response.target = as.vector(unique(training_points$T_W_Class)),
-                           aoi.col = "ZONE")
+                           aoi.col = "BGC_ZONE")
 
 #------------------------------------------------------------------------------
 # Create map(s) from model...
@@ -111,9 +111,10 @@ wetland_map(model.out = model.out,
 # Set up a GRASS-GIS Environment for attributing upstream basin stats...
 #------------------------------------------------------------------------------
 
-#!!Change for current environment!! 
-gisbase<-'/usr/lib/grass78/'
+#!!Change for your current GRASS-GIS installation!! 
+gisbase<-'/usr/lib/grass76/'
 
+#Get list of raster layers and names 
 lyr_lst<-list()
 lyr_names<-c()
 for(lyr in  c(1:dim(raster_stack)[3]))
@@ -122,25 +123,26 @@ for(lyr in  c(1:dim(raster_stack)[3]))
   lyr_names[lyr]<-rastLUT[lyr,2]
 }
 
-
-#Create a data frame of pour points 
-pour_pnts<-as.data.frame(raster(target_dem),xy=T)
-pour_pnts<-pour_pnts[complete.cases(pour_pnts),]
-colnames(pour_pnts)<-c('X','Y','UID')
-pour_pnts$UID<-c(1:nrow(pour_pnts))
-
-
+#Write the raster objects to a GRASS-GIS environment, derive streams and create GRASS DEM derivatives "r.watershed" 
 set_grass_env(gisbase=gisbase,
               DEM=raster(target_dem),
               lyr_list=lyr_lst,
               lyr_names=lyr_names,
               acc_thresh = 1000)
 
+#Create a data frame of pour points for purpose of example 
+pour_pnts<-as.data.frame(raster(target_dem),xy=T)
+pour_pnts<-pour_pnts[complete.cases(pour_pnts),]
+colnames(pour_pnts)<-c('X','Y','UID')
+pour_pnts$UID<-c(1:nrow(pour_pnts))
 
+#Take a sample, processing can take a long time when n is large 
 pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),500),]
 
+#For the random pour points calculate upstream basin mean and standard deviation for elevation and topographic wetness.
 basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
                              covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
                              stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'))
 
-
+#View results, columns are defined by 'covar_rast' and 'stat_vec' parameters.
+head(basin_stats)
