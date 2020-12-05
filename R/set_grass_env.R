@@ -36,6 +36,7 @@
 set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL)
 {
   #Set up temporary GRASS Environment, must provide gisBase, e.g., gisBase="/usr/lib/grass78"#
+  cat("Initializing GRASS ...")
   rgrass7::initGRASS(gisBase = gisbase,
                      home=tempdir(),
                      override = T,
@@ -45,6 +46,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   rgrass7::use_sp()
   
   #write DEM to GRASS env. 
+  cat("Writing DEM to GRASS env ...")
   rgrass7::writeRAST(as(DEM,"SpatialGridDataFrame"),
                      'dem',
                      ignore.stderr = T,
@@ -57,15 +59,17 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   #Write each disturbance layer to GRASS environment 
   for(lyr in c(1:length(lyr_list)))
   {
+    cat("Writing layer to GRASS env ...")
     rgrass7::writeRAST(as(lyr_list[[lyr]],"SpatialGridDataFrame"),
                        lyr_names[lyr],
                        ignore.stderr = T,
                        overwrite = T)
   }
   
-  #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells
+  #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells 
   if(seg==F)
   {
+  cat("Extracting streams from DEM, generating GRASS derivatives ...")
   rgrass7::execGRASS("r.watershed",
                      parameters = list(elevation='dem',
                                        threshold=2,
@@ -86,6 +90,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                                        threshold=acc_thresh,
                                        stream_vector='stream_v'))
   }else{
+    cat("Extracting streams from DEM, generating GRASS derivatives ...")
     rgrass7::execGRASS("r.watershed",
                        parameters = list(elevation='dem',
                                          threshold=2,
@@ -111,5 +116,5 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                        flags = c('overwrite',
                                  'quiet'))
   }
-  
+  cat("GRASS-GIS env initialized and populated ...")
 }
