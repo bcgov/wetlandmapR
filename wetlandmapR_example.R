@@ -137,12 +137,16 @@ colnames(pour_pnts)<-c('X','Y','UID')
 pour_pnts$UID<-c(1:nrow(pour_pnts))
 
 #Take a sample, processing can take a long time when n is large 
-pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),500),]
+pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),50),]
+
+cores<-parallel::detectCores()-1
+
 
 #For the random pour points calculate upstream basin mean and standard deviation for elevation and topographic wetness.
 basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
                              covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
-                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'))
+                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'),
+                             procs = cores)
 
 #View results, columns are defined by 'covar_rast' and 'stat_vec' parameters.
 head(basin_stats)

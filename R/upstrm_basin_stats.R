@@ -141,7 +141,7 @@ run_basin_stats<-function(pour_pnts,covar_rast,stat_vect,procs=1,proc_type='FORK
   
   basin_stats<-as.data.frame(basin_stats)
   
-  colnames(basin_stats)<-c('UID',covar_rast)
+  colnames(basin_stats)<-c('UID',paste(covar_rast,stat_vect,sep="_"))
   
   parallel::stopCluster(cl)
   
