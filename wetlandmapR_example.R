@@ -60,7 +60,7 @@ grid_values_at_sp(x=raster_stack,
                   filename = attributed_csv,
                   aoi = aoi_polys)
 
-
+head(as.data.frame(readr::read_csv(attributed_csv)))
 
 #------------------------------------------------------------------------------
 # Setup predictor list and raster LUT...
