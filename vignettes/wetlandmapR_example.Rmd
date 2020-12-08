@@ -156,7 +156,7 @@ First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using th
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #!!Change for your current GRASS-GIS installation!! 
-gisbase<-'/usr/lib/grass78/'
+gisbase<-'/usr/lib/grass76/'
 
 #Get list of raster layers and names 
 lyr_lst<-list()
