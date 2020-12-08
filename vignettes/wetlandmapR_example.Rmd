@@ -8,9 +8,27 @@ vignette: >
 ---
 
 
+The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
 
+##Using the wetlandmapr_dokr ...
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
+A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the image can be obtained by typing the command: 
+
+```{bash eval=FALSE}
+docker pull wetlandmap_dokr
+```
+
+once the image is in place, it can be run using the following Docker command
+
+```{bash eval=FALSE}
+docker run -e PASSWORD=APassword -p 8787:8787 --rm wetlandmap_dokr:latest
+```
+
+where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
+
+## Load dependencies ... 
+
+```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
 library(rgeos)
 library(rgdal)
@@ -20,8 +38,6 @@ library(raster)
 library(sf)
 library(doParallel)
 ```
-
-The following code demonstrates the use of the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) to classify wetlands from terrain derivatives and external inputs such as satellite imagery using example data provided in the package.  
 
 
 ## Raster data set-up ... 
@@ -89,7 +105,7 @@ grid_values_at_sp(x=raster_stack,
 
 ```
 
-##  Setup predictor list and raster LUT...
+##  Setup predictor list and raster LUT ...
 
 Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the URL to each co-variate raster layer, while the second column indicates the name of the layer. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs. 
 
@@ -112,7 +128,7 @@ dir.create(file.path(out_dir,"output"))
 ```
 
 
-## Run model and diagnostics...
+## Run model and diagnostics ...
 
 Below we build a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the co-variate raster layers above. We declare the response field to be the *T_W_Class* field. We specify that we want to use the *BGC_ZONE* column to identify separate AOIs. We also define the *SINKS* column to be a factor variable. The results include a is a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. 
 
@@ -132,7 +148,7 @@ model.out <- wetland_model(qdatafn = attributed_csv,
 ```
 
 
-## Create map(s) from model...
+## Create map(s) from model ...
 
 Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out*. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and and BEC AOI SpatialPolygons, the AOI column is defined as the *ZONE* column. 
 
@@ -146,7 +162,7 @@ wetland_map(model.out = model.out,
 ```
 
 
-## Attribute upstream basin stats...
+## Attribute upstream basin stats ...
 
 Optionally, after mapping has been completed, upstream basin attributes can be attributed to any point within the study area using ***wetlandmapR::upstream_basin_stats***.
 
@@ -176,7 +192,7 @@ set_grass_env(gisbase=gisbase,
 ```
 
 
-### Calculate upstream basin statistics 
+### Calculate upstream basin statistics ...
 
 Below we convert the DEM loaded above into a data frame with the *X* and *Y* coordinates of each pixel, and attribute a unique identifier field *UID*. We take a sample of these pixels to serve as pour points for the purpose of this example. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function. 
 
