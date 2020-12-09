@@ -1,6 +1,7 @@
 ---
 title: "wetlandmapR Example"
 output: rmarkdown::html_vignette
+author: Hunter Gleason
 vignette: >
   %\VignetteIndexEntry{wetlandmapR Example}
   %\VignetteEngine{knitr::rmarkdown}
@@ -10,12 +11,12 @@ vignette: >
 
 The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
 
-##Using the wetlandmapr_dokr ...
+## Using the wetlandmapr_dokr ...
 
 A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the image can be obtained by typing the command: 
 
 ```{bash eval=FALSE}
-docker pull wetlandmap_dokr
+docker pull huntgdok/wetlandmap_dokr:latest
 ```
 
 once the image is in place, it can be run using the following Docker command
