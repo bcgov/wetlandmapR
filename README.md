@@ -6,7 +6,7 @@ This package (in development) provides tools for running the `ModelMap::model.bu
 
 Wetland models can be run using area of interest polygons, restricting output to specific drainage basins, for example.
 
-wetlandmapR depends on RSAGA for some raster processing. RSAGA depends on [SAGA GIS](http://www.saga-gis.org/en/index.html) being installed and accessible on your computer. Please see the RSAGA documentation for instructions on how to do this.
+wetlandmapR depends on RSAGA for some raster processing. RSAGA depends on [SAGA GIS](http://www.saga-gis.org/en/index.html) being installed and accessible on your computer. Please see the RSAGA documentation for instructions on how to do this. Optionally, if the user wishes to attribute upstream basin statistics to provided pour points [GRASS-GIS](https://grass.osgeo.org/) version 7.6.0 or higher must also be installed in addition to the [rgrass7](https://cran.r-project.org/web/packages/rgrass7/index.html) R package. 
 
 ## Functions
 ### create_dem_products
@@ -48,4 +48,4 @@ docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/geospatial:3.6.3
 Where `URPassword` is any password of your choice, and username `rstudio`. The running container can be viewed by passing [localhost](http://localhost:8787/) to your browser. Be sure to copy all outputs locally before exiting as all data will be lost.  
 
 ## Examples
-See the example code in [wetlandmapR_example.R](wetlandmapR_example.R) for how to use the functions in this package together for mapping wetlands.
+See the example code in [wetlandmapR_example.Rmd]( https://github.com/HunterGleason/wetlandmapR/blob/hg_wetlandmapR/vignettes/wetlandmapR_example.Rmd) for how to use the functions in this package together for mapping wetlands.
