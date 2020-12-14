@@ -10,7 +10,7 @@ wetlandmapR depends on RSAGA for some raster processing. RSAGA depends on [SAGA 
 
 ## Functions
 ### create_dem_products
-Creates raster derivitives (products) from an input Digital Elevation Model (DEM) using SAGA-GIS.
+Creates raster derivatives (products) from an input Digital Elevation Model (DEM) using SAGA-GIS.
 
 ### stack_rasters
 Aligns input raster(s) to a target raster so that extent, cell size, and cell origin are the same, returning a RasterStack object.
@@ -24,11 +24,28 @@ This function runs `ModelMap::model.build` to build a wetland model using traini
 ### wetland_map
 This function runs `ModelMap::model.mapmake` to generate raster prediction surfaces using model output from `wetland_model`.
 
+### set_grass_env
+This function initializes a GRASS-GIS environment using the [rgrass7](https://cran.r-project.org/web/packages/rgrass7/index.html) package in order to calculate upstream basin statistics of provided pour points.
+
+### run_basin_stats
+This function assumes `set_grass_env` has been called. This function attributes upstream basin statistics calculated from provided input raster layers for specified pour point locations. 
+
 ## Installation
 Get the latest version from GitHub with:
 ```r
 devtools::install_github("bcgov/wetlandmapR")
 ```
+
+## Or with Docker 
+Download a Docker image based on rocker/geospatial with all the required dependencies and packages pre-installed with:
+```bash
+docker pull huntgdok/geospat:3.6.3
+```
+The image can then be run by passing the command:
+```bash
+docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/geospatial:3.6.3 
+``` 
+Where `URPassword` is any password of your choice, and username `rstudio`. The running container can be viewed by passing [localhost](http://localhost:8787/) to your browser. Be sure to copy all outputs locally before exiting as all data will be lost.  
 
 ## Examples
 See the example code in [wetlandmapR_example.R](wetlandmapR_example.R) for how to use the functions in this package together for mapping wetlands.
