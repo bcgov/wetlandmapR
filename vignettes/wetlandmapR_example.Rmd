@@ -1,34 +1,34 @@
 ---
 title: "wetlandmapR Example"
 output: rmarkdown::html_vignette
-author: Hunter Gleason
+author: Deepa Filatow, Gillian Harvey, Hunter Gleason
 vignette: >
-  %\VignetteIndexEntry{wetlandmapR Example}
+%\VignetteIndexEntry{wetlandmapR Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
----
-
-
-The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
-
-## Using the wetlandmapr_dokr ...
-
-A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the image can be obtained by typing the command: 
-
-```{bash eval=FALSE}
-docker pull huntgdok/wetlandmap_dokr:latest
-```
-
-once the image is in place, it can be run using the following Docker command
-
-```{bash eval=FALSE}
-docker run -e PASSWORD=APassword -p 8787:8787 --rm wetlandmap_dokr:latest
-```
-
-where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
-
-## Load dependencies ... 
-
+  ---
+  
+  
+  The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
+  
+  ## Using the wetlandmapr_dokr ...
+  
+  A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/geospat](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+  
+  ```{bash eval=FALSE}
+  docker pull huntgdok/geospat:3.6.3
+  ```
+  
+  once the image is in place, it can be run using the following Docker command
+  
+  ```{bash eval=FALSE}
+  docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/geospat:3.6.3
+  ```
+  
+  where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
+  
+  ## Load dependencies ... 
+  
 ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
 library(rgeos)
@@ -38,6 +38,7 @@ library(bcmaps)
 library(raster)
 library(sf)
 library(doParallel)
+library(bcdata)
 ```
 
 
@@ -56,8 +57,11 @@ dir.create(out_dir)
 #Load a example digital elevation model DEM from wetlandmapR package 
 target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
 
-#Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function
-create_dem_products(dem = target_dem, outdir = out_dir)
+#Load freshwater atlas stream data
+streams <- system.file('extdata','streams.gpkg',package = 'wetlandmapR')
+
+#Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function, burn FWA streams into DEM by 5 m ...
+create_dem_products(dem=target_dem,stream_vec = streams, burn_val=5, outdir=out_dir)
 
 #Get list of SAGA terrain derivatives within the output directory 
 raster_list <- list.files(out_dir, "sdat$", full.names = TRUE)
@@ -151,7 +155,7 @@ model.out <- wetland_model(qdatafn = attributed_csv,
 
 ## Create map(s) from model ...
 
-Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out*. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and and BEC AOI SpatialPolygons, the AOI column is defined as the *ZONE* column. 
+Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out*. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and BEC AOI SpatialPolygons, the AOI column is defined as the *ZONE* column. 
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #Map random forest results 
@@ -169,10 +173,10 @@ Optionally, after mapping has been completed, upstream basin attributes can be a
 
 ### Set up the GRASS-GIS environment:
 
-First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using the [**rgrass7**](https://cran.r-project.org/web/packages/rgrass7/index.html) package. This is done by calling ***wetlandmapR::set_grass_env***. This function requires that the path the the [**GRASS-GIS**](https://grass.osgeo.org/) binaries be provided, in addition to a list of *raster* objects to be summarized, such as those output above, and associated vector of raster layer names. As this function relies on the  [**GRASS-GIS**](https://grass.osgeo.org/) *r.stream.extract* module to derive a stream network a accumulation threshold in pixels must be defined. 
+First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using the [**rgrass7**](https://cran.r-project.org/web/packages/rgrass7/index.html) package. This is done by calling ***wetlandmapR::set_grass_env***. This function requires that the path the [**GRASS-GIS**](https://grass.osgeo.org/) binaries be provided, in addition to a list of *raster* objects to be summarized, such as those output above, and associated vector of raster layer names. As this function relies on the  [**GRASS-GIS**](https://grass.osgeo.org/) *r.stream.extract* module to derive a stream network a accumulation threshold in pixels must be defined. 
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
-#!!Change for your current GRASS-GIS installation!! 
+#!!Change to local GRASS-GIS installation if not using Docker image!! 
 gisbase<-'/usr/lib/grass76/'
 
 #Get list of raster layers and names 
@@ -198,6 +202,9 @@ set_grass_env(gisbase=gisbase,
 Below we convert the DEM loaded above into a data frame with the *X* and *Y* coordinates of each pixel, and attribute a unique identifier field *UID*. We take a sample of these pixels to serve as pour points for the purpose of this example. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function. 
 
 ```{r message=FALSE, warning=FALSE}
+#Set a random seed
+set.seed(42)
+
 #Create a data frame of pour points for purpose of example 
 pour_pnts<-as.data.frame(raster(target_dem),xy=T)
 pour_pnts<-pour_pnts[complete.cases(pour_pnts),]
@@ -222,4 +229,3 @@ basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
 #View upstream basin statistics 
 head(basin_stats)
 ```
-

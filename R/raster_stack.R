@@ -22,6 +22,8 @@
 #'
 #'
 #' @param dem filename (character) of input DEM raster.
+#' @param stream_vec (Optional) filename (character) to existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
+#' @param burn_val (Optional) double. The value of Epsilon for burning stream network into DEM.  
 #' @param outdir output folder path (character).
 #' @param products character. The DEM products to be created. Can be a vector
 #'   with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
@@ -36,14 +38,41 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem, outdir, products = NULL) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL) {
   env <- RSAGA::rsaga.env()
   
+  #Get dem raster params
+  r<-raster::raster(dem)
+  
+  x_res<-res(r)[1]
+  y_res<-res(r)[2]
+  
+  x_min<-extent(r)[1]
+  x_max<-extent(r)[2]
+  y_min<-extent(r)[3]
+  y_max<-extent(r)[4]
+  
+  
   # Convert DEM to SAGA grid
-  dem.r <- raster::raster(dem)
-  names(dem.r) <- "ELEV"
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
   RSAGA::rsaga.import.gdal(in.grid=dem,out.grid=dem.sgrd)
+  
+  #Optionally burn in a existing stream network
+  if(!is.null(stream_vec))
+  {
+    streams_r<-file.path(tempdir(),'streams_r.tif')
+    lyr_name<-tools::file_path_sans_ext(basename(stream_vec))
+    cmd<-paste('gdal_rasterize -l ',lyr_name,' -burn 1 -tr ',x_res,' ',y_res,' -te ',x_min,' ',y_min,' ',x_max,' ',y_max,' -ot Byte ',stream_vec,' ',streams_r,sep="")
+    system(cmd)
+    
+    streams_saga<-file.path(tempdir(),'streams_r.sgrd')
+    RSAGA::rsaga.import.gdal(in.grid = streams_r,out.grid = streams_saga)
+    
+    #No need to set no-data value when of type 'Byte'
+    #RSAGA::rsaga.geoprocessor(lib = 'grid_tools',module=36,param = list(GRID=streams_resamp,VALUE=0))
+    
+    RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',module = 6,param = list(DEM=dem.sgrd,STREAM=streams_saga,EPSILON=burn_val))
+  }
   
   dem.filled<-file.path(outdir, "ELEV_NoSink.sgrd")
   RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',module=4,param=list(ELEV=dem.sgrd,FILLED=dem.filled), env = env)
