@@ -1,33 +1,32 @@
 ---
 title: "wetlandmapR Example"
 output: rmarkdown::html_vignette
-author: Deepa Filatow, Gillian Harvey, Hunter Gleason
-vignette: >
-%\VignetteIndexEntry{wetlandmapR Example}
+author: "Deepa Filatow, Gillian Harvey, Hunter Gleason"
+vignette: > 
+  %\VignetteIndexEntry{wetlandmapR Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
-  ---
+---
   
   
-  The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
+The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
   
-  ## Using the wetlandmapr_dokr ...
+## Using the wetlandmapr_dokr ...
   
-  A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/geospat](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/geospat](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
   
-  ```{bash eval=FALSE}
-  docker pull huntgdok/geospat:3.6.3
-  ```
+```{bash eval=FALSE}
+docker pull huntgdok/geospat:3.6.3
+```
+once the image is in place, it can be run using the following Docker command
   
-  once the image is in place, it can be run using the following Docker command
+```{bash eval=FALSE}
+docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/geospat:3.6.3
+```
   
-  ```{bash eval=FALSE}
-  docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/geospat:3.6.3
-  ```
+where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
   
-  where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
-  
-  ## Load dependencies ... 
+## Load dependencies ... 
   
 ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
@@ -38,7 +37,6 @@ library(bcmaps)
 library(raster)
 library(sf)
 library(doParallel)
-library(bcdata)
 ```
 
 
