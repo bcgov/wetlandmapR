@@ -35,6 +35,7 @@ Get the latest version from GitHub with:
 ```r
 devtools::install_github("bcgov/wetlandmapR")
 ```
+If the `build_vignette` option is set to TRUE, installation may fail unless using Docker. 
 
 ## Or with Docker 
 Download a Docker image based on rocker/geospatial with all the required dependencies and packages pre-installed with:
