@@ -4,8 +4,15 @@
 \alias{wetland_map}
 \title{Wetland map production}
 \usage{
-wetland_map(model.out, model.folder, rastLUTfn, aoi = NULL,
-  aoi.col = NULL, na.action = "na.omit", ...)
+wetland_map(
+  model.out,
+  model.folder,
+  rastLUTfn,
+  aoi = NULL,
+  aoi.col = NULL,
+  na.action = "na.omit",
+  ...
+)
 }
 \arguments{
 \item{model.out}{list object returned from \code{wetland_model}. List

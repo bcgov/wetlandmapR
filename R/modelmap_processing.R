@@ -369,7 +369,7 @@ wetland_map <- function (model.out,
       aoi.target <- tail(strsplit(names(model.out)[i], "-")[[1]], n = 1)
 
       # Check that the aoi.target exists in aoi object's aoi.col field
-      if (!aoi.target %in% aoi[[aoi.col,]]) {
+      if (!aoi.target %in% as.character(as.data.frame(aoi)[,aoi.col])) {
 
         stop(paste0("The AOI used for this model run (", aoi.target,
                     ") does not exist in the AOI object provided."))
