@@ -4,10 +4,20 @@
 \alias{create_dem_products}
 \title{Create products from a DEM using RSAGA}
 \usage{
-create_dem_products(dem, outdir, products = NULL)
+create_dem_products(
+  dem,
+  stream_vec = NULL,
+  burn_val = NULL,
+  outdir,
+  products = NULL
+)
 }
 \arguments{
 \item{dem}{filename (character) of input DEM raster.}
+
+\item{stream_vec}{(Optional) filename (character) to existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.}
+
+\item{burn_val}{(Optional) double. The value of Epsilon for burning stream network into DEM.}
 
 \item{outdir}{output folder path (character).}
 
