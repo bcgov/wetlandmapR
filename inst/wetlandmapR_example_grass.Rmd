@@ -164,3 +164,66 @@ wetland_map(model.out = model.out,
             aoi.col = "ZONE")
 ```
 
+
+## Attribute upstream basin stats ...
+
+Optionally, after mapping has been completed, upstream basin attributes can be attributed to any point within the study area using ***wetlandmapR::upstream_basin_stats***.
+
+### Set up the GRASS-GIS environment:
+
+First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using the [**rgrass7**](https://cran.r-project.org/web/packages/rgrass7/index.html) package. This is done by calling ***wetlandmapR::set_grass_env***. This function requires that the path the [**GRASS-GIS**](https://grass.osgeo.org/) binaries be provided, in addition to a list of *raster* objects to be summarized, such as those output above, and associated vector of raster layer names. As this function relies on the  [**GRASS-GIS**](https://grass.osgeo.org/) *r.stream.extract* module to derive a stream network a accumulation threshold in pixels must be defined. 
+
+```{r warning=FALSE, message=FALSE, results=FALSE}
+#!!Change to local GRASS-GIS installation if not using Docker image!! 
+gisbase<-'/usr/lib/grass78/'
+
+#Get list of raster layers and names 
+lyr_lst<-list()
+lyr_names<-c()
+for(lyr in  c(1:dim(raster_stack)[3]))
+{
+  lyr_lst[[lyr]]<-raster(rastLUT[lyr,1])
+  lyr_names[lyr]<-rastLUT[lyr,2]
+}
+
+#Write the raster objects to a GRASS-GIS environment, derive streams and create GRASS DEM derivatives 'r.watershed' 
+set_grass_env(gisbase=gisbase,
+              DEM=raster(target_dem),
+              lyr_list=lyr_lst,
+              lyr_names=lyr_names,
+              acc_thresh = 1000)
+```
+
+
+### Calculate upstream basin statistics ...
+
+Below we convert the DEM loaded above into a data frame with the *X* and *Y* coordinates of each pixel, and attribute a unique identifier field *UID*. We take a sample of these pixels to serve as pour points for the purpose of this example. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function. 
+
+```{r message=FALSE, warning=FALSE}
+#Set a random seed
+set.seed(42)
+
+#Create a data frame of pour points for purpose of example 
+pour_pnts<-as.data.frame(raster(target_dem),xy=T)
+pour_pnts<-pour_pnts[complete.cases(pour_pnts),]
+colnames(pour_pnts)<-c('X','Y','UID')
+pour_pnts$UID<-c(1:nrow(pour_pnts))
+
+#Take a sample, processing can take a long time when n is large 
+pour_pnts<-pour_pnts[sample(c(1:nrow(pour_pnts)),50),]
+
+#View pour point table 
+head(pour_pnts)
+
+#Set to number of cores minus 1 
+cores<-parallel::detectCores()-1
+
+#For the random pour points calculate upstream basin mean and standard deviation for elevation and topographic wetness.
+basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
+                             covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
+                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'),
+                             procs = cores)
+
+#View upstream basin statistics 
+head(basin_stats)
+```

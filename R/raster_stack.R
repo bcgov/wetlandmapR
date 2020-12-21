@@ -277,7 +277,7 @@ stack_rasters <- function(rasters,
     rasterLUT <- rbind(rasterLUT,
                        data.frame(file = file,
                                   predictor = lyr_names[i],
-                                  band = i))
+                                  band = 1))
     
   }
   
