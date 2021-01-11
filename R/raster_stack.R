@@ -60,18 +60,27 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   #Optionally burn in a existing stream network
   if(!is.null(stream_vec))
   {
-    streams_r<-file.path(tempdir(),'streams_r.tif')
-    lyr_name<-tools::file_path_sans_ext(basename(stream_vec))
-    cmd<-paste('gdal_rasterize -l ',lyr_name,' -burn 1 -tr ',x_res,' ',y_res,' -te ',x_min,' ',y_min,' ',x_max,' ',y_max,' -ot Byte ',stream_vec,' ',streams_r,sep="")
+    streams_r <- file.path(tempdir(), "streams_r.tif")
+    lyr_name <- tools::file_path_sans_ext(basename(stream_vec))
+    cmd <- paste("gdal_rasterize -l ", lyr_name, " -burn 1 -tr ", 
+                 x_res, " ", y_res, " -te ", x_min, " ", y_min, " ", 
+                 x_max, " ", y_max, " -ot Byte ", stream_vec, " ", 
+                 streams_r, sep = "")
     system(cmd)
+    streams_saga <- file.path(tempdir(), "streams_saga_r.sgrd")
+    streams_resamp <- file.path(tempdir(), "streams_resamp.sgrd")
+    RSAGA::rsaga.import.gdal(in.grid = streams_r, out.grid = streams_saga, env = env)
     
-    streams_saga<-file.path(tempdir(),'streams_r.sgrd')
-    RSAGA::rsaga.import.gdal(in.grid = streams_r,out.grid = streams_saga)
+    RSAGA::rsaga.geoprocessor(lib = 'grid_tools', module = 0,
+                              param = list(INPUT=streams_saga,
+                                           OUTPUT=streams_resamp,
+                                           TARGET_DEFINITION=1,
+                                           TARGET_TEMPLATE=dem.sgrd), env=env)
     
-    #No need to set no-data value when of type 'Byte'
-    #RSAGA::rsaga.geoprocessor(lib = 'grid_tools',module=36,param = list(GRID=streams_resamp,VALUE=0))
-    
-    RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',module = 6,param = list(DEM=dem.sgrd,STREAM=streams_saga,EPSILON=burn_val))
+    RSAGA::rsaga.geoprocessor(lib = "ta_preprocessor", module = 6, 
+                              param = list(DEM = dem.sgrd,
+                                           STREAM = streams_resamp, 
+                                           EPSILON = burn_val),env=env)
   }
   
   dem.filled<-file.path(outdir, "ELEV_NoSink.sgrd")
