@@ -56,7 +56,7 @@ dir.create(out_dir)
 target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
 
 #Load freshwater atlas stream data
-streams <- system.file('extdata','streams.gpkg',package = 'wetlandmapR')
+streams <- system.file('extdata','streams.shp',package = 'wetlandmapR')
 
 #Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function, burn FWA streams into DEM by 5 m ...
 create_dem_products(dem=target_dem,stream_vec = streams, burn_val=5, outdir=out_dir)
