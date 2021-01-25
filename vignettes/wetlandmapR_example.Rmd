@@ -13,15 +13,15 @@ The following code demonstrates the use of the [wetlandmapR](https://github.com/
   
 ## Using the wetlandmapr_dokr ...
   
-A docker image based on the [**rocker/geospat:4.0.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/geospat](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:3.6.3](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
   
 ```{bash eval=FALSE}
-docker pull huntgdok/geospat:4.0.3
+docker pull huntgdok/wetlandmapr:3.6.3
 ```
 once the image is in place, it can be run using the following Docker command
   
 ```{bash eval=FALSE}
-docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/geospat:4.0.3
+docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/wetlandmapr:3.6.3
 ```
   
 where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
@@ -91,6 +91,10 @@ training_points<-st_read(system.file('extdata', 'TrainingPoints.shp', package = 
 
 #Load BEC zones from bcmaps as AOIs
 aoi_polys<-bec(ask=F) %>% st_crop(training_points)
+
+#Plot AOIs and training points
+ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
+  geom_sf(data=training_points)
 
 #Convert aoi_polys to sp
 aoi_polys<-as_Spatial(aoi_polys)
@@ -162,5 +166,22 @@ wetland_map(model.out = model.out,
             rastLUTfn = rastLUT,
             aoi = aoi_polys,
             aoi.col = "ZONE")
+```
+
+
+## Plot map results
+
+Plot the output classified ERDAS images by AOI ...
+
+```{r warning=FALSE, message=FALSE}
+#Get .img file paths from temporary directory 
+SBS.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "SBS")
+ESSF.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "ESSF")
+SBS.img<-paste(SBS.dir,'_map.img',sep='')
+ESSF.img<-paste(ESSF.dir,'_map.img',sep='')
+
+#Plot map results for each AOI
+plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))))
+plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep=''))))
 ```
 

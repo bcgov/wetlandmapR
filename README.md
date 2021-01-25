@@ -37,13 +37,13 @@ devtools::install_github("bcgov/wetlandmapR")
 ```
 
 ## Or with Docker 
-Download a Docker image based on rocker/geospatial with all the required dependencies and packages pre-installed with:
+Download a Docker image based on *rocker/geospatial:3.6.3* with all the required dependencies and packages pre-installed with:
 ```bash
-docker pull huntgdok/geospat:4.0.3
+docker pull huntgdok/wetlandmapr:3.6.3
 ```
 The image can then be run by passing the command:
 ```bash
-docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/geospat:4.0.3 
+docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/wetlandmapr:3.6.3 
 ``` 
 Where `URPassword` is any password of your choice, and username `rstudio`. The running container can be viewed by passing [localhost](http://localhost:8787/) to your browser. Be sure to copy all outputs locally before exiting as all data will be lost.  
 
