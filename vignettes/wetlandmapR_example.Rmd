@@ -13,15 +13,15 @@ The following code demonstrates the use of the [wetlandmapR](https://github.com/
   
 ## Using the wetlandmapr_dokr ...
   
-A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:3.6.3](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
   
 ```{bash eval=FALSE}
-docker pull huntgdok/wetlandmapr:3.6.3
+docker pull huntgdok/wetlandmapr:latest
 ```
 once the image is in place, it can be run using the following Docker command
   
 ```{bash eval=FALSE}
-docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/wetlandmapr:3.6.3
+docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/wetlandmapr:latest
 ```
   
 where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
@@ -42,7 +42,7 @@ library(doParallel)
 
 ## Raster data set-up ... 
 
-The following lines of code define an output directory, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including an image of Sentinel-2 band 4 are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*.
+The following lines of code define an output directory, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including an image of Sentinel-2 band 4 are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user. 
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results = FALSE, fig.cap="Raster stack of SAGA terrain derivatives and Sentinel-2 band 4 image."}
 # Set a random seed 
