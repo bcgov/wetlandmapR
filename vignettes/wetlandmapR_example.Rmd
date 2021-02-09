@@ -36,13 +36,14 @@ library(tidyverse)
 library(bcmaps)
 library(raster)
 library(sf)
+library(sp)
 library(doParallel)
 ```
 
 
 ## Raster data set-up ... 
 
-The following lines of code define an output directory, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including an image of Sentinel-2 band 4 are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user. 
+The following lines of code define an output directory, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including a Sentinel-2 Band 4 raster are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user. 
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results = FALSE, fig.cap="Raster stack of SAGA terrain derivatives and Sentinel-2 band 4 image."}
 # Set a random seed 
@@ -55,7 +56,7 @@ dir.create(out_dir)
 #Load a example digital elevation model DEM from wetlandmapR package 
 target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
 
-#Load freshwater atlas stream data
+#Load freshwater atlas stream data from wetlandmapR package
 streams <- system.file('extdata','streams.shp',package = 'wetlandmapR')
 
 #Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function, burn FWA streams into DEM by 5 m ...
@@ -70,10 +71,10 @@ raster_list<-raster_list[!raster_list %in% file.path(out_dir,'ELEV_NoSink.sdat')
 #E.g., Add external Sentinel-2 Band 4 data to the list of raster inputs from wetlandmapR package 
 raster_list<-append(raster_list,system.file("extdata", "B4_SENT2.tif", package = "wetlandmapR"))
 
-#Stack all raster inputs using the wetlandmapR 'stack_raster' function 
+#Stack all raster inputs using the wetlandmapR 'stack_raster' function, passing 'raster_list' as input, output a raster Look-Up-Table 'rastLUT' CSV 
 raster_stack <- stack_rasters(rasters = raster_list, target_raster = target_dem, outdir = out_dir,rastLUTfn = file.path(out_dir,'rastLUT.csv'), aligned=FALSE)
 
-#Plot the new stack of raster objects (co-variate layers)
+#Plot the new stack of raster objects (input layers)
 plot(raster_stack)
 
 ```
@@ -82,10 +83,10 @@ plot(raster_stack)
 
 ## Attribute raster values to training points ...
 
-The following code reads in example training points from the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package as a *sf* object. In addition, biogeoclimatic zones (BEC) are loaded internally using the [bcmaps](https://github.com/bcgov/bcmaps) package. Using the raster stack plotted above as input, the ***wetlandmapR::grid_values_at_sp*** function attributes the raster values intersecting the training points grouped by the AOI polygons, in this case BEC zones. The results are written to the output directory as a CSV.
+The following code reads in example training points from the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package as a *sp* object. In addition, biogeoclimatic zones (BEC) are loaded internally using the [bcmaps](https://github.com/bcgov/bcmaps) package. Using the raster stack plotted above as input, the ***wetlandmapR::grid_values_at_sp*** function attributes the raster values intersecting the training points grouped by the AOI polygons, in this case BEC zones. The results are written to the output directory as a CSV.
 
 
-```{r message=FALSE, warning=FALSE, results=FALSE}
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results=FALSE, fig.cap="Sample points and BEC-ZONE AOI polygons."}
 #Load training data as sp  
 training_points<-st_read(system.file('extdata', 'TrainingPoints.shp', package = 'wetlandmapR'))
 
@@ -103,7 +104,7 @@ aoi_polys<-as_Spatial(aoi_polys)
 #Assign URL to output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
 
-#Attribute training points with values at intersection with co-variate layers
+#Attribute training points with values at intersection with input layers, write results to CSV, and group by provided AOI. 
 grid_values_at_sp(x=raster_stack,
                   y=training_points,
                   filename = attributed_csv,
@@ -114,7 +115,7 @@ grid_values_at_sp(x=raster_stack,
 
 ##  Setup predictor list and raster LUT ...
 
-Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the URL to each co-variate raster layer, while the second column indicates the name of the layer. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs. 
+Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the URL to each co-variate raster layer, while the second column indicates the name of the layer, and the third column indicates the band index. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs.
 
 ```{r message=FALSE, warning=FALSE}
 #Read in rastLUT table as data.frame 
@@ -125,11 +126,11 @@ rastLUT <- read.csv(file.path(out_dir,'rastLUT.csv'),
 #View rastLUT table 
 rastLUT
 
-#Get the list of co-variate predictor names (2nd column)
+#Get the list of input predictor names (2nd column)
 predList <- rastLUT[,2]
 
 
-#Create an output directory within 'out_dir'
+#Create an output directory within 'out_dir' directory
 dir.create(file.path(out_dir,"output"))
 
 ```
@@ -137,7 +138,7 @@ dir.create(file.path(out_dir,"output"))
 
 ## Run model and diagnostics ...
 
-Below we build a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the co-variate raster layers above. We declare the response field to be the *T_W_Class* field. We specify that we want to use the *BGC_ZONE* column to identify separate AOIs. We also define the *SINKS* column to be a factor variable. The results include a is a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. 
+Below we build a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the input raster layers above. We declare the response field to be the *T_W_Class* field. We specify that we want to use the *BGC_ZONE* column to identify separate AOIs. We also define the *SINKS* column (input) to be a factor variable. The results include a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. 
 
 ```{r message=FALSE, warning=FALSE}
 #Fit a random forest model 
@@ -173,7 +174,7 @@ wetland_map(model.out = model.out,
 
 Plot the output classified ERDAS images by AOI ...
 
-```{r warning=FALSE, message=FALSE}
+```{r fig.width=6, fig.height=6, warning=FALSE, message=FALSE, fig.cap="Mapped Classification Results by AOI"}
 #Get .img file paths from temporary directory 
 SBS.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "SBS")
 ESSF.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "ESSF")
@@ -181,7 +182,8 @@ SBS.img<-paste(SBS.dir,'_map.img',sep='')
 ESSF.img<-paste(ESSF.dir,'_map.img',sep='')
 
 #Plot map results for each AOI
-plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))))
-plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep=''))))
+plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))),col=c("blue","brown","black","green","white","pink"),legend=F)
+legend("topright", legend = c("Fl","T","Water","Wb","Wf","Ws"), fill = c("blue","brown","black","green","white","pink"))
+plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep=''))),col=c("brown","white","green"),legend=F)
 ```
 
