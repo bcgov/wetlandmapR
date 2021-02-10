@@ -9,9 +9,9 @@ vignette: >
 ---
   
   
-The following code demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided in the package.
+The following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided with the package. This document is written to serve as a reference for performing similar classification in any area of interest. 
   
-## Using the wetlandmapr_dokr ...
+## Using the wetlandmapr Docker ...
   
 A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
   
@@ -21,12 +21,12 @@ docker pull huntgdok/wetlandmapr:latest
 once the image is in place, it can be run using the following Docker command
   
 ```{bash eval=FALSE}
-docker run -e PASSWORD=APassword -p 8787:8787 --rm huntgdok/wetlandmapr:latest
+docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 --rm huntgdok/wetlandmapr:latest
 ```
   
-where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
+where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. If the user is calculating upstream basin stats, they must first install GRASS-GIS addon *r.stream.extract* into the container. Alternatively, the package can be run locally assuming dependencies are in place. 
   
-## Load dependencies ... 
+## Load R package dependencies ... 
   
 ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
@@ -37,13 +37,12 @@ library(bcmaps)
 library(raster)
 library(sf)
 library(sp)
-library(doParallel)
 ```
 
 
 ## Raster data set-up ... 
 
-The following lines of code define an output directory, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including a Sentinel-2 Band 4 raster are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user. 
+The following lines of code define an output directory for the terrain derivatives, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including a Sentinel-2 Band 4 raster are converted to a raster stack by calling the ***wetlandmapR::stack_raster*** function. The resulting raster stack is plotted below. As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user. 
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results = FALSE, fig.cap="Raster stack of SAGA terrain derivatives and Sentinel-2 band 4 image."}
 # Set a random seed 
@@ -83,7 +82,7 @@ plot(raster_stack)
 
 ## Attribute raster values to training points ...
 
-The following code reads in example training points from the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package as a *sp* object. In addition, biogeoclimatic zones (BEC) are loaded internally using the [bcmaps](https://github.com/bcgov/bcmaps) package. Using the raster stack plotted above as input, the ***wetlandmapR::grid_values_at_sp*** function attributes the raster values intersecting the training points grouped by the AOI polygons, in this case BEC zones. The results are written to the output directory as a CSV.
+This chunck reads in example training points from the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package as a *sp* object. In addition, biogeoclimatic zones (BEC) are loaded internally using the [bcmaps](https://github.com/bcgov/bcmaps) package. Using the raster stack plotted above as input, the ***wetlandmapR::grid_values_at_sp*** function attributes the intersecting raster values to the training points grouped by the AOI polygons, in this case BEC zones are used as an example. The results are written to the output directory as a CSV *"train_pnts_attributed.csv"*.
 
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results=FALSE, fig.cap="Sample points and BEC-ZONE AOI polygons."}
@@ -104,7 +103,7 @@ aoi_polys<-as_Spatial(aoi_polys)
 #Assign URL to output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
 
-#Attribute training points with values at intersection with input layers, write results to CSV, and group by provided AOI. 
+#Attribute training points with intersecting input raster values grouped by provided AOI, write results to CSV. 
 grid_values_at_sp(x=raster_stack,
                   y=training_points,
                   filename = attributed_csv,
@@ -115,7 +114,7 @@ grid_values_at_sp(x=raster_stack,
 
 ##  Setup predictor list and raster LUT ...
 
-Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the URL to each co-variate raster layer, while the second column indicates the name of the layer, and the third column indicates the band index. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs.
+Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the file path to each input raster layer, while the second column indicates the name of the layer, and the third column indicates the band index. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs.
 
 ```{r message=FALSE, warning=FALSE}
 #Read in rastLUT table as data.frame 
@@ -138,7 +137,7 @@ dir.create(file.path(out_dir,"output"))
 
 ## Run model and diagnostics ...
 
-Below we build a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the input raster layers above. We declare the response field to be the *T_W_Class* field. We specify that we want to use the *BGC_ZONE* column to identify separate AOIs. We also define the *SINKS* column (input) to be a factor variable. The results include a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. 
+Below we build a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the input raster layers above. We declare the response field to be the "T_W_Class" field, and set *response.type* as categorical. The "OBJECTID" is defined as identifying unique observations. We specify that we want to use the "BGC_ZONE" column to identify separate AOIs. The *responce.target* parameter is for subsetting the training dataset, in this case we use all wetland categories. We also define the "SINKS" column (input) to be a factor variable. The results include a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. Model outputs will be output to the *model.folder* directory, in this case "output". Because the modeling process in random, a seed it set for reproducibility. 
 
 ```{r message=FALSE, warning=FALSE}
 #Fit a random forest model 
