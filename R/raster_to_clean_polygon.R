@@ -5,7 +5,7 @@
 #' should be filled. Optionally, polygons may be simplified using \code{\link{smoothr}} 
 #' function, a smoothing method must be specified. 
 #'
-#' @param r Classified Raster object, STARS object or Spatial Grid.
+#' @param r Classified Raster or STARS object.
 #' @param min_area_drop_m2 Numeric. Minimum area in square meters for which polygons will be dropped
 #' @param max_area_fill_m2 Numeric. Maximum area in square meters of internal polygon holes for which
 #' holes will be remove. 
@@ -26,6 +26,11 @@
 #' @export
 raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smooth_method)
 {
+  if(class(r)==class(raster()))
+  {
+    r <- stars::st_as_stars(r)
+  }
+  
   max_area_fill_m2<-units::as_units(max_area_fill_m2, "m2")
   min_area_drop_m2<-units::as_units(min_area_drop_m2, "m2")
   

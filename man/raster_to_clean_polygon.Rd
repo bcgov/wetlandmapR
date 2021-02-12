@@ -13,7 +13,7 @@ raster_to_clean_polygon(
 )
 }
 \arguments{
-\item{r}{Classified Raster object, STARS object or Spatial Grid.}
+\item{r}{Classified Raster or STARS object.}
 
 \item{min_area_drop_m2}{Numeric. Minimum area in square meters for which polygons will be dropped}
 

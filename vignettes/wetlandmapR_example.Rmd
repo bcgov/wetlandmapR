@@ -3,32 +3,32 @@ title: "wetlandmapR Example"
 output: rmarkdown::html_vignette
 author: "Deepa Filatow, Gillian Harvey, Hunter Gleason"
 vignette: > 
-  %\VignetteIndexEntry{wetlandmapR Example}
+%\VignetteIndexEntry{wetlandmapR Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
----
+  ---
   
   
-The following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided with the package. This document is written to serve as a reference for performing similar classification in any area of interest. 
+  The following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided with the package. This document is written to serve as a reference for performing similar classification in any area of interest. 
   
-## Using the wetlandmapr Docker ...
+  ## Using the wetlandmapr Docker ...
   
-A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+  A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
   
-```{bash eval=FALSE}
-docker pull huntgdok/wetlandmapr:latest
-```
-once the image is in place, it can be run using the following Docker command
+  ```{bash eval=FALSE}
+  docker pull huntgdok/wetlandmapr:latest
+  ```
+  once the image is in place, it can be run using the following Docker command
   
-```{bash eval=FALSE}
-docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 --rm huntgdok/wetlandmapr:latest
-```
+  ```{bash eval=FALSE}
+  docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 --rm huntgdok/wetlandmapr:latest
+  ```
   
-where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. If the user is calculating upstream basin stats, they must first install GRASS-GIS addon *r.stream.extract* into the container. Alternatively, the package can be run locally assuming dependencies are in place. 
+  where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. If the user is calculating upstream basin stats, they must first install GRASS-GIS addon *r.stream.extract* into the container. Alternatively, the package can be run locally assuming dependencies are in place. 
   
-## Load R package dependencies ... 
+  ## Load R package dependencies ... 
   
-```{r message=FALSE, warning=FALSE}
+  ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
 library(rgeos)
 library(rgdal)
@@ -37,6 +37,8 @@ library(bcmaps)
 library(raster)
 library(sf)
 library(sp)
+library(RColorBrewer)
+library(doParallel)
 ```
 
 
@@ -186,3 +188,103 @@ legend("topright", legend = c("Fl","T","Water","Wb","Wf","Ws"), fill = c("blue",
 plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep=''))),col=c("brown","white","green"),legend=F)
 ```
 
+
+## Attribute upstream basin stats ...
+
+Optionally, after mapping has been completed, upstream basin attributes can be attributed to any point within the study area using ***wetlandmapR::upstream_basin_stats***.
+
+### Set up the GRASS-GIS environment:
+
+First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using the [**rgrass7**](https://cran.r-project.org/web/packages/rgrass7/index.html) package. This is done by calling ***wetlandmapR::set_grass_env***. This function requires that the path the [**GRASS-GIS**](https://grass.osgeo.org/) binaries be provided, in addition to a list of *raster* objects to be summarized, such as those output above, and associated vector of raster layer names. As this function relies on the  [**GRASS-GIS**](https://grass.osgeo.org/) *r.stream.extract* module to derive a stream network a accumulation threshold in pixels must be defined. 
+
+```{r warning=FALSE, message=FALSE, results=FALSE}
+#!!Change to local GRASS-GIS installation if not using Docker image!! 
+gisbase<-'/usr/lib/grass78/'
+#Get list of raster layers and names 
+lyr_lst<-list()
+lyr_names<-c()
+for(lyr in  c(1:dim(raster_stack)[3]))
+{
+  lyr_lst[[lyr]]<-raster(rastLUT[lyr,1])
+  lyr_names[lyr]<-rastLUT[lyr,2]
+}
+#Write the raster objects to a GRASS-GIS environment, derive streams and create GRASS DEM derivatives 'r.watershed' 
+set_grass_env(gisbase=gisbase,
+              DEM=raster(target_dem),
+              lyr_list=lyr_lst,
+              lyr_names=lyr_names,
+              acc_thresh = 1000)
+```
+
+
+
+### Polygonize wetland classification map ...
+
+In this chunk we polygonize the resulting wetland classification map for the SBS BEC Zone generated by ***wetlandmapR::wetland_map*** using the ***wetlandmapR::raster_to_clean_polygon*** function. We then identify the lowest point for each continuous wetland complex to use as a 
+pour point for calculating upstream basin statistics. 
+
+```{r message=FALSE, warning=FALSE}
+
+SBS_classified <- raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))
+
+SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin")
+
+ggplot()+
+  geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
+  scale_color_brewer(palette = "Spectral")
+
+dem<-raster(rastLUT[rastLUT[,2]=='ELEV',1])
+
+get_low_pnt<-function(dem,poly)
+{
+  if(class(dem)==class(raster()))
+  {
+    dem <- stars::st_as_stars(dem)
+  }
+  
+  masked <- as.data.frame(dem[poly])
+  
+  masked <- masked[complete.cases(masked),]
+  
+  xy<-as.vector(masked[which.min(masked[,3]),c('x','y')])
+  
+  return(xy)
+}
+
+
+low_pnts <- c()
+
+for(i in 1:nrow(SBS_Class_ply)){
+  low_pnts<-rbind(low_pnts,get_low_pnt(dem,st_geometry(SBS_Class_ply[i,])))
+}
+
+
+```
+
+
+
+
+### Calculate upstream basin statistics ...
+
+Below we convert the DEM loaded above into a data frame with the *X* and *Y* coordinates of each pixel, and attribute a unique identifier field *UID*. We take a sample of these pixels to serve as pour points for the purpose of this example. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function. 
+
+```{r message=FALSE, warning=FALSE}
+#Set a random seed
+set.seed(42)
+#Create a data frame of pour points for purpose of example 
+pour_pnts<-as.data.frame(low_pnts)
+pour_pnts$UID<-c(1:nrow(pour_pnts))
+colnames(pour_pnts)<-c('X','Y','UID')
+
+#View pour point table 
+head(pour_pnts)
+#Set to number of cores minus 1 
+cores<-parallel::detectCores()-1
+#For the random pour points calculate upstream basin mean and standard deviation for elevation and topographic wetness.
+basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
+                             covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
+                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'),
+                             procs = cores)
+#View upstream basin statistics 
+head(basin_stats)
+```
