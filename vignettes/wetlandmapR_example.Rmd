@@ -199,7 +199,7 @@ First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using th
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #!!Change to local GRASS-GIS installation if not using Docker image!! 
-gisbase<-'/usr/lib/grass78/'
+gisbase<-'/usr/lib/grass76/'
 #Get list of raster layers and names 
 lyr_lst<-list()
 lyr_names<-c()
