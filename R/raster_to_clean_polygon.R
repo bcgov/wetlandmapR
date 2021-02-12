@@ -1,17 +1,16 @@
-#' Polygonize a classified raster layer, dropping crumbs and fill holes. 
+#' Polygonize a classified raster layer, dropping crumbs and filling holes. 
 #'
 #' Must provide a classified raster, minimum area for which polygons should
 #' be dropped (meteres sqaured), and maximum area for which polygon holes
-#' should be filled. Optionally, polygons may be simplified using *smoothr*
-#' 'smooth'[https://cran.r-project.org/web/packages/smoothr/index.html] function, 
-#' a smoothing method must be specified. 
+#' should be filled. Optionally, polygons may be simplified using \code{\link{smoothr}} 
+#' function, a smoothing method must be specified. 
 #'
 #' @param r Classified Raster object, STARS object or Spatial Grid.
 #' @param min_area_drop_m2 Numeric. Minimum area in square meters for which polygons will be dropped
 #' @param max_area_fill_m2 Numeric. Maximum area in square meters of internal polygon holes for which
 #' holes will be remove. 
 #' @param smooth Boolean. Should the resulting polygons geometry be simplified. 
-#' @param smooth_method String. Smoothing method to pass to smoothr::smooth,
+#' @param smooth_method String. Smoothing method to pass to \code{\link{smoothr}},
 #' smooth must be TRUE.  
 #'
 #' @return Polygonized sf object representing the input raster categories. 
@@ -22,7 +21,7 @@
 #'r <- stars::read_stars('CategoryPredictionMap.tif')
 #'
 #'#Polygonize classified raster
-#'p <- raster_to_clean_polygon`(`r,2500,2500,TRUE,'chaikin'`)`
+#'p <- raster_to_clean_polygon(r,2500,2500,TRUE,'chaikin')
 #' }
 #' @export
 raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smooth_method)

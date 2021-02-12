@@ -27,7 +27,7 @@ with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 defaults to generating all products.}
 }
 \description{
-Creates raster derivitives (products) from an input Digital Elevation Model
+Creates raster derivatives (products) from an input Digital Elevation Model
 (DEM) using SAGA-GIS.
 }
 \details{

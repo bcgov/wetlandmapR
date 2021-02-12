@@ -2,7 +2,7 @@
 % Please edit documentation in R/raster_to_clean_polygon.R
 \name{raster_to_clean_polygon}
 \alias{raster_to_clean_polygon}
-\title{Polygonize a classified raster layer, dropping crumbs and fill holes.}
+\title{Polygonize a classified raster layer, dropping crumbs and filling holes.}
 \usage{
 raster_to_clean_polygon(
   r,
@@ -22,7 +22,7 @@ holes will be remove.}
 
 \item{smooth}{Boolean. Should the resulting polygons geometry be simplified.}
 
-\item{smooth_method}{String. Smoothing method to pass to smoothr::smooth,
+\item{smooth_method}{String. Smoothing method to pass to \code{\link{smoothr}},
 smooth must be TRUE.}
 }
 \value{
@@ -31,9 +31,8 @@ Polygonized sf object representing the input raster categories.
 \description{
 Must provide a classified raster, minimum area for which polygons should
 be dropped (meteres sqaured), and maximum area for which polygon holes
-should be filled. Optionally, polygons may be simplified using *smoothr*
-'smooth'[https://cran.r-project.org/web/packages/smoothr/index.html] function, 
-a smoothing method must be specified.
+should be filled. Optionally, polygons may be simplified using \code{\link{smoothr}} 
+function, a smoothing method must be specified.
 }
 \examples{
 \dontrun{
@@ -41,6 +40,6 @@ a smoothing method must be specified.
 r <- stars::read_stars('CategoryPredictionMap.tif')
 
 #Polygonize classified raster
-p <- raster_to_clean_polygon`(`r,2500,2500,TRUE,'chaikin'`)`
+p <- raster_to_clean_polygon(r,2500,2500,TRUE,'chaikin')
 }
 }

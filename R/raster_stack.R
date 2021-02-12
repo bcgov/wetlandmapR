@@ -1,6 +1,6 @@
 #' Create products from a DEM using RSAGA
 #'
-#' Creates raster derivitives (products) from an input Digital Elevation Model
+#' Creates raster derivatives (products) from an input Digital Elevation Model
 #' (DEM) using SAGA-GIS.
 #'
 #' This function uses RSAGA which requires having SAGA-GIS (v2.3+) installed.
