@@ -214,7 +214,8 @@ for(lyr in  c(1:dim(raster_stack)[3]))
 set_grass_env(gisbase=gisbase,
               DEM=raster(target_dem),
               lyr_list=lyr_lst,
-              lyr_names=lyr_names)
+              lyr_names=lyr_names,
+              acc_thresh = 1000)
 ```
 
 
