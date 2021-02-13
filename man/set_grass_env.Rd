@@ -3,37 +3,21 @@
 \name{set_grass_env}
 \alias{set_grass_env}
 \title{Function initializes a temporary GRASS-GIS environment, sets the region
-parameters to match those of user provided DEM, writes covariate 
-raster to the GRASS environment and generates a accumulation and 
-drainage direction raster from DEM.}
+parameters to match those of user provided DEM, writes input
+raster to the GRASS environment.}
 \usage{
-set_grass_env(
-  gisbase,
-  DEM,
-  lyr_list,
-  lyr_names,
-  acc_thresh,
-  seg = F,
-  memory_mb = NULL
-)
+set_grass_env(gisbase, DEM, lyr_list, lyr_names)
 }
 \arguments{
 \item{DEM}{A digital elevation model as a 'raster' object with an 
 extent encompassing all pour points of interest. Note, all layers
 must match the CRS of this layer.}
 
-\item{lyr_list}{A list of 'raster' objects representing the covariate 
+\item{lyr_list}{A list of 'raster' objects representing the input 
 raster layers that will be written to the GRASS environment.}
 
 \item{lyr_names}{A character vector corresponding to 'lyr_list' defining
-the names of each covarite raster layer.}
-
-\item{acc_thresh}{The accumulation threshold to be passed to 'r.stream.extract'.}
-
-\item{seg}{Should data be segmented to disk to save RAM on resource limited systems,
-defaults to FALSE.}
-
-\item{memory_mb}{Maximum memory in MB to allocate if 'seg' is equal to TRUE.}
+the names of each input raster layer.}
 
 \item{gisBase}{The directory path to GRASS binaries and libraries, 
 containing bin and lib sub directories among others, see rgrass7::initGRASS}
@@ -45,15 +29,10 @@ NULL, only initializes and populates a GRASS-GIS environment.
 This function relies on 'rgrass7' to initialize and populate a 
 temporary GRASS-GIS environment. The user must have GRASS-GIS
 binaries installed, and provide the path to these, e.g., "/usr/lib/grass78".
-In addition, the GRASS 'r.stream.extract' Add-On must be installed.
 User must provide a DEM, which will be used for subsequent processing,
 the GRASS environment will be set to match the DEM extent and CRS.
-A list of 'raster' objects representing covariate layers must be 
+A list of 'raster' objects representing input layers must be 
 provided, as each layer will be written to the GRASS environment. 
-For each covariate raster, a character vector of desired raster 
-layer names must be provided. Both a accumulation and drainage 
-direction raster are computed. A stream network is extracted,
-using a simple accumulation threshold. For systems with limited
-resources, the 'seg' parameter can be set to 'T" with a maximum 
-RAM memory MB defined by 'memory_mb'.
+For each input raster, a character vector of desired raster 
+layer names must be provided.
 }
