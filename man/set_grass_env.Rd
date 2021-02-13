@@ -6,7 +6,15 @@
 parameters to match those of user provided DEM, writes input
 raster to the GRASS environment.}
 \usage{
-set_grass_env(gisbase, DEM, lyr_list, lyr_names)
+set_grass_env(
+  gisbase,
+  DEM,
+  lyr_list,
+  lyr_names,
+  acc_thresh,
+  seg = F,
+  memory_mb = NULL
+)
 }
 \arguments{
 \item{DEM}{A digital elevation model as a 'raster' object with an 
@@ -18,6 +26,13 @@ raster layers that will be written to the GRASS environment.}
 
 \item{lyr_names}{A character vector corresponding to 'lyr_list' defining
 the names of each input raster layer.}
+
+\item{acc_thresh}{The accumulation threshold to be passed to 'r.stream.extract'.}
+
+\item{seg}{Should data be segmented to disk to save RAM on resource limited systems,
+defaults to FALSE.}
+
+\item{memory_mb}{Maximum memory in MB to allocate if 'seg' is equal to TRUE.}
 
 \item{gisBase}{The directory path to GRASS binaries and libraries, 
 containing bin and lib sub directories among others, see rgrass7::initGRASS}
@@ -34,5 +49,9 @@ the GRASS environment will be set to match the DEM extent and CRS.
 A list of 'raster' objects representing input layers must be 
 provided, as each layer will be written to the GRASS environment. 
 For each input raster, a character vector of desired raster 
-layer names must be provided.
+layer names must be provided. Both a accumulation and drainage 
+direction raster are computed. A stream network is extracted,
+using a simple accumulation threshold. For systems with limited
+resources, the 'seg' parameter can be set to 'T" with a maximum 
+RAM memory MB defined by 'memory_mb'.
 }
