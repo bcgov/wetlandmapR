@@ -46,12 +46,6 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names)
   rgrass7::execGRASS('g.region',
                      parameters = list(raster='dem'))
   
-  rgrass7::execGRASS("g.proj", flags = c("c", "quiet"),
-            parameters = list(
-              georef = 'dem'
-            ))
-  
-  
   #Write each disturbance layer to GRASS environment 
   for(lyr in c(1:length(lyr_list)))
   {
