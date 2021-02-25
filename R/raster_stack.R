@@ -88,7 +88,6 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   
   RSAGA::rsaga.grid.calculus(c(dem.sgrd,dem.filled),file.path(outdir,"SINKS.sgrd"),~abs(a-b)>0)
   
-  dem.sgrd <- dem.filled
   
   if (is.null(products)) {
     products <- c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN", "CPROF",
