@@ -7,21 +7,21 @@ basin statistics for all pour points defined in a pour point data
 frame.}
 \usage{
 run_basin_stats(
-  procs = 1,
-  proc_type = "FORK",
   pour_pnts,
   covar_rast,
-  stat_vect
+  stat_vect,
+  procs = 1,
+  proc_type = "FORK"
 )
 }
 \arguments{
-\item{procs}{Number of concurrent process to use, defaults to 1.}
-
-\item{proc_type}{Type of 'parallel' cluster to apply, defaults to 'FORK'}
-
 \item{pour_pnts}{A data.frame with three columns labeled 'X', 'Y' and 'UID', 
 representing the X, and Y coordinates of the pour point in units matching 
 the DEM, and a unique identifying number (UID).}
+
+\item{procs}{Number of concurrent process to use, defaults to 1.}
+
+\item{proc_type}{Type of 'parallel' cluster to apply, defaults to 'FORK'}
 
 \item{...}{
   Arguments passed on to \code{\link[=upstream_basin_stats]{upstream_basin_stats}}

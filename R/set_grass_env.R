@@ -1,17 +1,15 @@
 #' Function initializes a temporary GRASS-GIS environment, sets the region
-#' parameters to match those of user provided DEM, writes covariate 
-#' raster to the GRASS environment and generates a accumulation and 
-#' drainage direction raster from DEM. 
+#' parameters to match those of user provided DEM, writes input
+#' raster to the GRASS environment. 
 #'
 #' This function relies on 'rgrass7' to initialize and populate a 
 #' temporary GRASS-GIS environment. The user must have GRASS-GIS
 #' binaries installed, and provide the path to these, e.g., "/usr/lib/grass78".
-#' In addition, the GRASS 'r.stream.extract' Add-On must be installed.
 #' User must provide a DEM, which will be used for subsequent processing,
 #' the GRASS environment will be set to match the DEM extent and CRS.
-#' A list of 'raster' objects representing covariate layers must be 
+#' A list of 'raster' objects representing input layers must be 
 #' provided, as each layer will be written to the GRASS environment. 
-#' For each covariate raster, a character vector of desired raster 
+#' For each input raster, a character vector of desired raster 
 #' layer names must be provided. Both a accumulation and drainage 
 #' direction raster are computed. A stream network is extracted,
 #' using a simple accumulation threshold. For systems with limited
@@ -23,14 +21,14 @@
 #' @param DEM A digital elevation model as a 'raster' object with an 
 #' extent encompassing all pour points of interest. Note, all layers
 #' must match the CRS of this layer. 
-#' @param lyr_list A list of 'raster' objects representing the covariate 
+#' @param lyr_list A list of 'raster' objects representing the input 
 #' raster layers that will be written to the GRASS environment. 
 #' @param lyr_names A character vector corresponding to 'lyr_list' defining
-#' the names of each covarite raster layer. 
+#' the names of each input raster layer.
 #' @param acc_thresh The accumulation threshold to be passed to 'r.stream.extract'.
 #' @param seg Should data be segmented to disk to save RAM on resource limited systems,
 #' defaults to FALSE. 
-#' @param memory_mb Maximum memory in MB to allocate if 'seg' is equal to TRUE. 
+#' @param memory_mb Maximum memory in MB to allocate if 'seg' is equal to TRUE.  
 #' @return NULL, only initializes and populates a GRASS-GIS environment. 
 #' @export
 set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL)
@@ -66,7 +64,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                        overwrite = T)
   }
   
-  #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells 
+  #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells
   if(seg==F)
   {
   cat("Extracting streams from DEM, generating GRASS derivatives ...")
@@ -83,7 +81,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                      flags = c('overwrite',
                                'quiet',
                                'a'))
-  
+
   rgrass7::execGRASS("r.stream.extract",
                      parameters = list(elevation='dem',
                                        accumulation='acc',
@@ -106,7 +104,7 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                                  'quiet',
                                  'a',
                                  'm'))
-    
+
     rgrass7::execGRASS("r.stream.extract",
                        parameters = list(elevation='dem',
                                          accumulation='acc',

@@ -35,18 +35,17 @@ Get the latest version from GitHub with:
 ```r
 devtools::install_github("bcgov/wetlandmapR")
 ```
-If the `build_vignette` option is set to TRUE, installation may fail unless using Docker. 
 
 ## Or with Docker 
-Download a Docker image based on rocker/geospatial with all the required dependencies and packages pre-installed with:
+Download a Docker image based on *rocker/geospatial:3.6.3* with all the required dependencies and packages pre-installed with:
 ```bash
-docker pull huntgdok/geospat:3.6.3
+docker pull huntgdok/wetlandmapr:latest
 ```
 The image can then be run by passing the command:
 ```bash
-docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/geospatial:3.6.3 
+docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/wetlandmapr:latest 
 ``` 
 Where `URPassword` is any password of your choice, and username `rstudio`. The running container can be viewed by passing [localhost](http://localhost:8787/) to your browser. Be sure to copy all outputs locally before exiting as all data will be lost.  
 
 ## Examples
-See the example code in [wetlandmapR_example.Rmd]( https://github.com/HunterGleason/wetlandmapR/blob/hg_wetlandmapR/vignettes/wetlandmapR_example.Rmd) for how to use the functions in this package together for mapping wetlands.
+See the example code in [wetlandmapR_example.Rmd](https://github.com/HunterGleason/wetlandmapR/blob/hg_wetlandmapR/vignettes/wetlandmapR_example.Rmd) for how to use the functions in this package together for mapping wetlands.
