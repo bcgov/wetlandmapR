@@ -39,6 +39,7 @@ library(sf)
 library(sp)
 library(RColorBrewer)
 library(doParallel)
+library(RStoolbox)
 ```
 
 
@@ -151,7 +152,7 @@ model.out <- wetland_model(qdatafn = attributed_csv,
                            predFactor = c('SINKS'),
                            response.name = "T_W_Class",
                            response.type = "categorical",
-                           seed = 44,
+                           seed = 42,
                            response.target = as.vector(unique(training_points$T_W_Class)),
                            aoi.col = "BGC_ZONE")
 ```
@@ -181,11 +182,16 @@ SBS.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern 
 ESSF.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "ESSF")
 SBS.img<-paste(SBS.dir,'_map.img',sep='')
 ESSF.img<-paste(ESSF.dir,'_map.img',sep='')
+SBS.key<-paste(SBS.dir,'_map_key.csv',sep='')
+ESSF.key<-paste(ESSF.dir,'_map_key.csv',sep='')
 
 #Plot map results for each AOI
-plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))),col=c("blue","brown","black","green","white","pink"),legend=F)
-legend("topright", legend = c("Fl","T","Water","Wb","Wf","Ws"), fill = c("blue","brown","black","green","white","pink"))
-plot(as.factor(raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep=''))),col=c("brown","white","green"),legend=F)
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "SBS Class")
+SBS_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.key,sep=''))
+SBS_key
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "ESSF Class")
+ESSF_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.key,sep=''))
+ESSF_key
 ```
 
 
@@ -238,7 +244,7 @@ ggplot()+
   geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
   scale_color_brewer(palette = "Spectral")
 
-#Load the digital elvation model as raster object 
+#Load the digital elevation model as raster object 
 dem<-raster(rastLUT[rastLUT[,2]=='ELEV',1])
 
 #A function for finding the lowest elevation within an area of interest
@@ -306,6 +312,7 @@ pour_pnts <- merge(pour_pnts,basin_stats,by="UID")
 ggplot()+
   geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
   scale_color_brewer(palette = "Spectral")+
-  geom_point(data=pour_pnts,aes(x=X,y=Y,size=TOPOWET_STDDEV))
+  geom_point(data=pour_pnts,aes(x=X,y=Y,size=TOPOWET_STDDEV))+
+  labs(fill = "SBS Class")
 
 ```
