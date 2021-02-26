@@ -3,7 +3,7 @@ title: "wetlandmapR Example"
 output: rmarkdown::html_vignette
 author: "Deepa Filatow, Gillian Harvey, Hunter Gleason"
 vignette: > 
-%\VignetteIndexEntry{wetlandmapR Example}
+  %\VignetteIndexEntry{wetlandmapR Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\usepackage[utf8]{inputenc}
 ---
@@ -242,7 +242,8 @@ SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin")
 #Plot polygon wetland classification for SBS BEC Zone
 ggplot()+
   geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
-  scale_color_brewer(palette = "Spectral")
+  scale_color_brewer(palette = "Spectral")+
+  labs(fill = "SBS Class")
 
 #Load the digital elevation model as raster object 
 dem<-raster(rastLUT[rastLUT[,2]=='ELEV',1])
