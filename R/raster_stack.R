@@ -110,13 +110,16 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     } else if (p == "ASPECT") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
                                   out.aspect = products.out[i],
-                                  unit.aspect = "degrees",
+                                  unit.aspect = "radians",
                                   env = env)
       
-      #Replace NA with -1.0 for ASPECT layer
-      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"ASPECT.sgrd"),~ifelse(eq(a,nodata()),-1.0,a))
-      
-      
+      #Replace flat areas with aspect value form uniform distribution 
+      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"ASPECT.sgrd"),~ifelse(eq(a,nodata()),rand_u(0,6),a))
+
+      #Compute eastness and northness from aspect 
+      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
+      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"EASTNESS.sgrd"),~sin(a))
+       
     } else if (p == "CPLAN") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
                                   out.cplan = products.out[i],
