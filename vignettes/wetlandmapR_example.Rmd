@@ -68,7 +68,7 @@ create_dem_products(dem=target_dem,stream_vec = streams, burn_val=5, outdir=out_
 raster_list <- list.files(out_dir, "sdat$", full.names = TRUE)
 
 #Drop the DEM w/ sinks from list
-raster_list<-raster_list[!raster_list %in% file.path(out_dir,'ELEV_NoSink.sdat')]
+raster_list<-raster_list[!raster_list %in% c(file.path(out_dir,'ELEV_NoSink.sdat'),file.path(out_dir,'ASPECT.sdat'))]
 
 #E.g., Add external Sentinel-2 Band 4 data to the list of raster inputs from wetlandmapR package 
 raster_list<-append(raster_list,system.file("extdata", "B4_SENT2.tif", package = "wetlandmapR"))
