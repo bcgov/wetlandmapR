@@ -113,12 +113,9 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                   unit.aspect = "degrees",
                                   env = env)
       
-      #Replace NA with 0.0 for ASPECT layer
-      aspect_tmp <- raster::raster(file.path(outdir,"ASPECT.sgrd"))
+      #Replace NA with -1.0 for ASPECT layer
+      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"ASPECT.sgrd"),~ifelse(eq(a,nodata()),-1.0,a))
       
-      aspect_tmp[is.na(aspect_tmp)] <- -1.0 
-      
-      raster::writeRaster(aspect_tmp,file.path(outdir,"ASPECT.sgrd"))
       
     } else if (p == "CPLAN") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
