@@ -112,13 +112,27 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                   out.aspect = products.out[i],
                                   unit.aspect = "radians",
                                   env = env)
-      
-      #Replace flat areas with aspect value form uniform distribution 
-      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"ASPECT.sgrd"),~ifelse(eq(a,nodata()),rand_u(0,6),a))
 
-      #Compute eastness and northness from aspect 
-      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
-      RSAGA::rsaga.grid.calculus(c(file.path(outdir,"ASPECT.sgrd")),file.path(outdir,"EASTNESS.sgrd"),~sin(a))
+      RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
+      
+      
+      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
+                                module = 1,
+                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
+                                           USE_NODATA=1,
+                                           GRIDS=file.path(outdir,'NORTHNESS.sgrd'),
+                                           RESULT=file.path(outdir,'NORTHNESS.sgrd')))
+      
+      RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"EASTNESS.sgrd"),~sin(a))
+      
+      
+      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
+                                module = 1,
+                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
+                                           USE_NODATA=1,
+                                           GRIDS=file.path(outdir,'EASTNESS.sgrd'),
+                                           RESULT=file.path(outdir,'EASTNESS.sgrd')))
+    
        
     } else if (p == "CPLAN") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
