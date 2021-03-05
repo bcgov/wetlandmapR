@@ -116,7 +116,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       #Replace NA with 0.0 for ASPECT layer
       aspect_tmp <- raster::raster(file.path(outdir,"ASPECT.sgrd"))
       
-      aspect_tmp[is.na(aspect_tmp)] <- 0.0 
+      aspect_tmp[is.na(aspect_tmp)] <- -1.0 
       
       raster::writeRaster(aspect_tmp,file.path(outdir,"ASPECT.sgrd"))
       
