@@ -94,6 +94,8 @@ wetland_model <- function(qdatafn,
                           aoi.target = NULL,
                           MODELfn = NULL,
                           na.action = "na.roughfix",
+                          device.w=10,
+                          device.h=10,
                           ...
                           ) {
 
@@ -155,7 +157,7 @@ wetland_model <- function(qdatafn,
                                        response.name = response.name,
                                        response.type = response.type,
                                        na.action = na.action,
-                                       seed = seed,
+                                       seed = seed
                                        ...)
 
     # TO DO:
@@ -180,6 +182,8 @@ wetland_model <- function(qdatafn,
                                               # Model Validation Arguments
                                               prediction.type = "OOB",
                                               cex = 1.2,
+                                              device.height = device.h,
+                                              device.width = device.w,
                                               ...)
 
     # TO DO:
