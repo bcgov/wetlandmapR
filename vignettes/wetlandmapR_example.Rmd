@@ -103,6 +103,7 @@ ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
 aoi_polys<-as_Spatial(aoi_polys)
 
 
+
 #Assign URL to output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
 
