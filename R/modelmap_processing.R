@@ -157,7 +157,7 @@ wetland_model <- function(qdatafn,
                                        response.name = response.name,
                                        response.type = response.type,
                                        na.action = na.action,
-                                       seed = seed
+                                       seed = seed,
                                        ...)
 
     # TO DO:
