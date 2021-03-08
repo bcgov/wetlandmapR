@@ -179,7 +179,8 @@ wetland_model <- function(qdatafn,
                                               unique.rowname = unique.rowname,
                                               # Model Validation Arguments
                                               prediction.type = "OOB",
-                                              cex = 1.2)
+                                              cex = 1.2,
+                                              ...)
 
     # TO DO:
     # Save diagnostic values (section commented out below) to an output csv?
