@@ -92,6 +92,7 @@ This chunck reads in example training points from the [wetlandmapR](https://gith
 #Load training data as sp  
 training_points<-st_read(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
 
+training_points$OBJECTID<-c(1:nrow(training_points))
 
 #Load BEC zones from bcmaps as AOIs
 aoi_polys<-bec(ask=F) %>% st_crop(training_points)
@@ -154,7 +155,8 @@ model.out <- wetland_model(qdatafn = attributed_csv,
                            response.type = "categorical",
                            seed = 42,
                            response.target = as.vector(unique(training_points$T_W_Class)),
-                           aoi.col = "BGC_ZONE")
+                           aoi.col = "BGC_ZONE",
+                           device.type = "pdf")
 ```
 
 

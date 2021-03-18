@@ -181,6 +181,7 @@ wetland_model <- function(qdatafn,
                                               unique.rowname = unique.rowname,
                                               # Model Validation Arguments
                                               prediction.type = "OOB",
+                                              device.type="pdf",
                                               cex = 1.2,
                                               device.height = device.h,
                                               device.width = device.w,
