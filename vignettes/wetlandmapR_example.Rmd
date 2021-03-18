@@ -92,6 +92,15 @@ This chunck reads in example training points from the [wetlandmapR](https://gith
 #Load training data as sp  
 training_points<-st_read(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
 
+#Clip training point to subset AOI 
+ext<-extent(raster_stack)
+xmin = ext[1]
+xmax = ext[2]
+ymin=ext[3]
+ymax=ext[4]
+ext <- sf::st_sfc(sf::st_polygon(x = list(rbind(c(xmin, ymin), c(xmax, ymin), c(xmax, ymax), c(xmin, ymax), c(xmin, ymin)))), crs = sf::st_crs(training_points))
+training_points <- st_intersection(training_points,ext)
+
 training_points$OBJECTID<-c(1:nrow(training_points))
 
 #Load BEC zones from bcmaps as AOIs
@@ -151,12 +160,11 @@ model.out <- wetland_model(qdatafn = attributed_csv,
                            unique.rowname = "OBJECTID",
                            predList = predList,
                            predFactor = c('SINKS'),
-                           response.name = "T_W_Class",
+                           response.name = "T_W_Class_",
                            response.type = "categorical",
                            seed = 42,
-                           response.target = as.vector(unique(training_points$T_W_Class)),
-                           aoi.col = "BGC_ZONE",
-                           device.type = "pdf")
+                           response.target = as.vector(unique(training_points$T_W_Class_)),
+                           aoi.col = "BGC_ZONE")
 ```
 
 
@@ -315,7 +323,7 @@ pour_pnts <- merge(pour_pnts,basin_stats,by="UID")
 ggplot()+
   geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
   scale_color_brewer(palette = "Spectral")+
-  geom_point(data=pour_pnts,aes(x=X,y=Y,size=TOPOWET_STDDEV))+
+  geom_point(data=pour_pnts,aes(x=X,y=Y,size=TOPOWET_STDDEV),alpha=3/10)+
   labs(fill = "SBS Class")
 
 ```
