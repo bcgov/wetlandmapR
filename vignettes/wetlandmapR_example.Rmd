@@ -90,7 +90,8 @@ This chunck reads in example training points from the [wetlandmapR](https://gith
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results=FALSE, fig.cap="Sample points and BEC-ZONE AOI polygons."}
 #Load training data as sp  
-training_points<-st_read(system.file('extdata', 'TrainingPoints.shp', package = 'wetlandmapR'))
+training_points<-st_read(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
+
 
 #Load BEC zones from bcmaps as AOIs
 aoi_polys<-bec(ask=F) %>% st_crop(training_points)
@@ -101,8 +102,6 @@ ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
 
 #Convert aoi_polys to sp
 aoi_polys<-as_Spatial(aoi_polys)
-
-
 
 #Assign URL to output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
