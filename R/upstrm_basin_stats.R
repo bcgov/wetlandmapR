@@ -30,21 +30,21 @@ upstream_basin_stats<-function(x,y,uid,covar_rast,stat_vec)
   out_str_stats<-paste(tempdir(),'/basin_stat_',uid,'.txt',sep="")
   
   rgrass7::execGRASS(cmd='r.water.outlet',
-            parameters = list(input='dir',
-                              coordinates=c(x,y),
-                              output=out_str_basin),
-            flags = c('overwrite','quiet'))
+                     parameters = list(input='dir',
+                                       coordinates=c(x,y),
+                                       output=out_str_basin),
+                     flags = c('overwrite','quiet'))
   
   stat_tab<-c(uid)
   
   for(i in c(1:length(covar_rast)))
   {
     rgrass7::execGRASS(cmd='r.univar',
-              parameters = list(map=covar_rast[i],
-                                zones=out_str_basin,
-                                output=out_str_stats,
-                                separator='newline'),
-              flags=c('g','overwrite'))
+                       parameters = list(map=covar_rast[i],
+                                         zones=out_str_basin,
+                                         output=out_str_stats,
+                                         separator='newline'),
+                       flags=c('g','overwrite'))
     
     stats<-readr::read_lines(out_str_stats)
     
@@ -126,7 +126,7 @@ upstream_basin_stats<-function(x,y,uid,covar_rast,stat_vec)
 #' @export
 run_basin_stats<-function(pour_pnts,covar_rast,stat_vect,procs=1,proc_type='FORK')
 {
-
+  
   cl<-parallel::makeCluster(procs,type=proc_type)
   doParallel::registerDoParallel(cl)
   
@@ -146,6 +146,38 @@ run_basin_stats<-function(pour_pnts,covar_rast,stat_vect,procs=1,proc_type='FORK
   parallel::stopCluster(cl)
   
   return(basin_stats)
+}
+
+
+#' Provided a DEM (or any raster layer), function returns the XY location
+#' of the minimum (or maximum) raster value within a provided polygon area
+#' of interest.
+#'
+#' @param dem Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.
+#' @param poly An sf polygon object representing the area of interest in which to return the location 
+#' of the minimum (or maximum) raster value. 
+#' @param low Should the location of the  lowest or highest raster value be returned, defaults to true. 
+#' @return A numeric vector with he XY coordinated of the highest or lowest raster value in map units. 
+#' @export
+get_low_high_loc<-function(dem,poly,low=TRUE)
+{
+  if(class(dem)==class(raster()))
+  {
+    dem <- stars::st_as_stars(dem)
+  }
+  
+  masked <- as.data.frame(dem[poly])
+  
+  masked <- masked[complete.cases(masked),]
+  
+  if(low==T)
+  {
+    xy<-as.vector(masked[which.min(masked[,3]),c('x','y')])
+  }else{
+    xy<-as.vector(masked[which.max(masked[,3]),c('x','y')])
+  }
+  
+  return(xy)
 }
 
 

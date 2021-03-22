@@ -3,6 +3,7 @@
 export("%>%")
 export(batch_bcdata)
 export(create_dem_products)
+export(get_low_high_loc)
 export(grid_values_at_sp)
 export(raster_to_clean_polygon)
 export(run_basin_stats)

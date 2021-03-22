@@ -19,6 +19,8 @@ wetland_model(
   aoi.target = NULL,
   MODELfn = NULL,
   na.action = "na.roughfix",
+  device.w = 10,
+  device.h = 10,
   ...
 )
 }
