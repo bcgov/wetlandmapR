@@ -215,7 +215,7 @@ First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using th
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #!!Change to local GRASS-GIS installation if not using Docker image!! 
-gisbase<-'/usr/lib/grass76/'
+gisbase<-'/usr/lib/grass78/'
 
 #Get list of raster layers and names 
 lyr_lst<-list()
@@ -256,7 +256,7 @@ ggplot()+
   labs(fill = "SBS Class")
 
 #Load the digital elevation model as raster object 
-dem<-raster(rastLUT[rastLUT[,2]=='ELEV',1])
+acc<-readRAST('acc',ignore.stderr = get.ignore.stderrOption())
 
 #Initialize an empty coordinates vector 
 low_pnts <- c()

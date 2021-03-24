@@ -39,7 +39,8 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   rgrass7::initGRASS(gisBase = gisbase,
                      home=tempdir(),
                      override = T,
-                     remove_GISRC=T)
+                     remove_GISRC=T,
+                     mapset = 'PERMANENT')
   
   #Use sp
   rgrass7::use_sp()
@@ -54,6 +55,10 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   #Set grass region parameters to 'dem' layer 
   rgrass7::execGRASS('g.region',
                      parameters = list(raster='dem'))
+  
+  rgrass7::execGRASS('g.proj',
+                     parameters = list(georef=dem@file@name),
+                     flags = c('c'))
   
   #Write each disturbance layer to GRASS environment 
   for(lyr in c(1:length(lyr_list)))
