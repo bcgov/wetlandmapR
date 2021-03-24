@@ -13,7 +13,8 @@ set_grass_env(
   lyr_names,
   acc_thresh,
   seg = F,
-  memory_mb = NULL
+  memory_mb = NULL,
+  convergence = 5
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ the names of each input raster layer.}
 defaults to FALSE.}
 
 \item{memory_mb}{Maximum memory in MB to allocate if 'seg' is equal to TRUE.}
+
+\item{convergence}{`integer` Convergence factor fo MFD (1-10) (Default 5)}
 
 \item{gisBase}{The directory path to GRASS binaries and libraries, 
 containing bin and lib sub directories among others, see rgrass7::initGRASS}

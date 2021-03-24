@@ -93,29 +93,31 @@ raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smo
   min_area_drop_m2<-units::as_units(min_area_drop_m2, "m2")
   
   # POLYGONIZE (AND DISSOLVE/MERGE BY CLASS)
-  cat("Converting raster cetegories to polygon ...")
+  cat("Converting raster cetegories to polygon ... \n")
   p <- gdal_polygonizeR(x=r,...)
-  
+ 
+  sf::st_crs(p) <- sf::st_crs(r)
+   
   # RENAME FIELDS
   names(p) <- c("class","geometry")
   
   # CALCULATE AREA (m2) (based on trim 25x25 data, so 625 m2 is one pixel)
-  cat("Computing polygon areas ...")
+  cat("Computing polygon areas ... \n")
   p <- p %>% dplyr::mutate(area = sf::st_area(.))
   
   # FILTER AREA (i.e. DROP CRUMBS)
-  cat("Filtering polygons by area ...")
+  cat("Filtering polygons by area ... \n")
   p <- p %>%
     dplyr::filter(area > min_area_drop_m2)
   
   # FILL HOLES
-  cat("Filling polygon holes ...")
+  cat("Filling polygon holes ... \n")
   p <- p %>%
     smoothr::fill_holes(threshold = max_area_fill_m2)
   
   # SMOOTH POLYGONS
   if(smooth == T){
-    cat("Smoothing polygons ...")
+    cat("Smoothing polygons ... \n")
     p_sm <- smoothr::smooth(p, method = smooth_method)
   }
   
