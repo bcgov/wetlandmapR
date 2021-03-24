@@ -9,7 +9,8 @@ raster_to_clean_polygon(
   min_area_drop_m2,
   max_area_fill_m2,
   smooth,
-  smooth_method
+  smooth_method,
+  ...
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ holes will be remove.}
 
 \item{smooth_method}{String. Smoothing method to pass to \code{\link{smoothr}},
 smooth must be TRUE.}
+
+\item{...}{Any arguments to be passed to gdal_polgonizeR}
 }
 \value{
 Polygonized sf object representing the input raster categories.
