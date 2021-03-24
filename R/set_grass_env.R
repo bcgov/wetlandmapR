@@ -28,10 +28,11 @@
 #' @param acc_thresh The accumulation threshold to be passed to 'r.stream.extract'.
 #' @param seg Should data be segmented to disk to save RAM on resource limited systems,
 #' defaults to FALSE. 
-#' @param memory_mb Maximum memory in MB to allocate if 'seg' is equal to TRUE.  
+#' @param memory_mb Maximum memory in MB to allocate if 'seg' is equal to TRUE.
+#' @param convergence `integer` Convergence factor fo MFD (1-10) (Default 5) 
 #' @return NULL, only initializes and populates a GRASS-GIS environment. 
 #' @export
-set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL)
+set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL,convergence=5)
 {
   #Set up temporary GRASS Environment, must provide gisBase, e.g., gisBase="/usr/lib/grass78"#
   cat("Initializing GRASS ...")
@@ -77,7 +78,8 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                                        drainage='dir',
                                        stream='stream_r',
                                        length_slope='slope_lngth',
-                                       slope_steepness='steepness'),
+                                       slope_steepness='steepness',
+                                       convergence=convergence),
                      flags = c('overwrite',
                                'quiet',
                                'a'))
@@ -99,7 +101,8 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                                          stream='stream_r',
                                          length_slope='slope_lngth',
                                          slope_steepness='steepness',
-                                         memory=memory_mb),
+                                         memory=memory_mb,
+                                         convergence=convergence),
                        flags = c('overwrite',
                                  'quiet',
                                  'a',
