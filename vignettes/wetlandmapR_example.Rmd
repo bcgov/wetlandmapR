@@ -256,14 +256,14 @@ ggplot()+
   labs(fill = "SBS Class")
 
 #Load the digital elevation model as raster object 
-acc<-readRAST('acc',ignore.stderr = get.ignore.stderrOption())
+acc<-raster(readRAST('acc',ignore.stderr = get.ignore.stderrOption()))
 
 #Initialize an empty coordinates vector 
 low_pnts <- c()
 
 #Populate coordinated vector with coordinates of lowest elevation pixel within each wetland polygon 
 for(i in 1:nrow(SBS_Class_ply)){
-  low_pnts<-rbind(low_pnts,get_low_high_loc(dem,st_geometry(SBS_Class_ply[i,])))
+  low_pnts<-rbind(low_pnts,get_low_high_loc(acc,st_geometry(SBS_Class_ply[i,]),low=F))
 }
 ```
 
