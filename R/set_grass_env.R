@@ -10,10 +10,11 @@
 #' A list of 'raster' objects representing input layers must be 
 #' provided, as each layer will be written to the GRASS environment. 
 #' For each input raster, a character vector of desired raster 
-#' layer names must be provided. Both a accumulation and drainage 
-#' direction raster are computed. A stream network is extracted,
-#' using a simple accumulation threshold. For systems with limited
-#' resources, the 'seg' parameter can be set to 'T" with a maximum 
+#' layer names must be provided. Both a accumulation ('acc') and drainage 
+#' direction ('dir') raster are computed. A stream network ('stream_r') is derived and
+#' terrain derivatives are generated using 'r.watershed'. In addition, 
+#' strahler stream order ('strahler') is computed using 'r.stream.order'. For systems 
+#' with limited resources, the 'seg' parameter can be set to 'T" with a maximum 
 #' RAM memory MB defined by 'memory_mb'.
 #'
 #' @param gisBase The directory path to GRASS binaries and libraries, 
@@ -30,7 +31,7 @@
 #' defaults to FALSE. 
 #' @param memory_mb Maximum memory in MB to allocate if 'seg' is equal to TRUE.
 #' @param convergence `integer` Convergence factor fo MFD (1-10) (Default 5) 
-#' @return NULL, only initializes and populates a GRASS-GIS environment. 
+#' @return NULL, only initializes and populates a GRASS-GIS environment, see description.  
 #' @export
 set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_mb=NULL,convergence=5)
 {
@@ -74,27 +75,27 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
   #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells
   if(seg==F)
   {
-  cat("Extracting streams from DEM, generating GRASS derivatives ...")
-  rgrass7::execGRASS("r.watershed",
-                     parameters = list(elevation='dem',
-                                       threshold=2,
-                                       accumulation='acc',
-                                       tci='topo_idx',
-                                       spi='strm_pow',
-                                       drainage='dir',
-                                       stream='stream_r',
-                                       length_slope='slope_lngth',
-                                       slope_steepness='steepness',
-                                       convergence=convergence),
-                     flags = c('overwrite',
-                               'quiet',
-                               'a'))
-
-  rgrass7::execGRASS("r.stream.extract",
-                     parameters = list(elevation='dem',
-                                       accumulation='acc',
-                                       threshold=acc_thresh,
-                                       stream_vector='stream_v'))
+    cat("Extracting streams from DEM, generating GRASS derivatives ...")
+    rgrass7::execGRASS("r.watershed",
+                       parameters = list(elevation='dem',
+                                         threshold=2,
+                                         accumulation='acc',
+                                         tci='topo_idx',
+                                         spi='strm_pow',
+                                         drainage='dir',
+                                         stream='stream_r',
+                                         length_slope='slope_lngth',
+                                         slope_steepness='steepness',
+                                         convergence=convergence,
+                                         threshold=acc_thresh),
+                       flags = c('overwrite','quiet','a'))
+    
+    rgrass7::execGRASS('r.stream.order',
+                       parameters = list(stream_rast='stream_r',
+                                         direction='dir',
+                                         strahler='strahler'),
+                       flags = c('overwrite'))
+    
   }else{
     cat("Extracting streams from DEM, generating GRASS derivatives ...")
     rgrass7::execGRASS("r.watershed",
@@ -108,20 +109,17 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                                          length_slope='slope_lngth',
                                          slope_steepness='steepness',
                                          memory=memory_mb,
-                                         convergence=convergence),
-                       flags = c('overwrite',
-                                 'quiet',
-                                 'a',
-                                 'm'))
-
-    rgrass7::execGRASS("r.stream.extract",
-                       parameters = list(elevation='dem',
-                                         accumulation='acc',
-                                         threshold=acc_thresh,
-                                         stream_vector='stream_v',
+                                         convergence=convergence,
+                                         threshold=acc_thresh),
+                       flags = c('overwrite','quiet','a','m'))
+    
+    rgrass7::execGRASS('r.stream.order',
+                       parameters = list(stream_rast='stream_r',
+                                         direction='dir',
+                                         strahler='strahler',
                                          memory=memory_mb),
-                       flags = c('overwrite',
-                                 'quiet'))
+                       flags = c('overwrite','m'))
+    
   }
   cat("GRASS-GIS env initialized and populated ...")
 }

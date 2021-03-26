@@ -41,7 +41,7 @@ defaults to FALSE.}
 containing bin and lib sub directories among others, see rgrass7::initGRASS}
 }
 \value{
-NULL, only initializes and populates a GRASS-GIS environment.
+NULL, only initializes and populates a GRASS-GIS environment, see description.
 }
 \description{
 This function relies on 'rgrass7' to initialize and populate a 
@@ -52,9 +52,10 @@ the GRASS environment will be set to match the DEM extent and CRS.
 A list of 'raster' objects representing input layers must be 
 provided, as each layer will be written to the GRASS environment. 
 For each input raster, a character vector of desired raster 
-layer names must be provided. Both a accumulation and drainage 
-direction raster are computed. A stream network is extracted,
-using a simple accumulation threshold. For systems with limited
-resources, the 'seg' parameter can be set to 'T" with a maximum 
+layer names must be provided. Both a accumulation ('acc') and drainage 
+direction ('dir') raster are computed. A stream network ('stream_r') is derived and
+terrain derivatives are generated using 'r.watershed'. In addition, 
+strahler stream order ('strahler') is computed using 'r.stream.order'. For systems 
+with limited resources, the 'seg' parameter can be set to 'T" with a maximum 
 RAM memory MB defined by 'memory_mb'.
 }
