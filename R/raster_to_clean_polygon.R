@@ -135,7 +135,6 @@ raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smo
     
     strt_idx<-end_idx+1
     end_idx<-end_idx+delta
-    print(c(strt_idx,",",end_idx))
     i<-i+1
   }
   

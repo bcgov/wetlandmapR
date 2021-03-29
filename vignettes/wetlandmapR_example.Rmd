@@ -30,16 +30,11 @@ vignette: >
   
 ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
-library(rgeos)
-library(rgdal)
+library(sf)
 library(tidyverse)
 library(bcmaps)
-library(raster)
-library(sf)
-library(sp)
-library(RColorBrewer)
-library(doParallel)
 library(RStoolbox)
+library(doParallel)
 library(rgrass7)
 ```
 
