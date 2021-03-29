@@ -78,7 +78,6 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
     cat("Extracting streams from DEM, generating GRASS derivatives ...")
     rgrass7::execGRASS("r.watershed",
                        parameters = list(elevation='dem',
-                                         threshold=2,
                                          accumulation='acc',
                                          tci='topo_idx',
                                          spi='strm_pow',
@@ -100,7 +99,6 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
     cat("Extracting streams from DEM, generating GRASS derivatives ...")
     rgrass7::execGRASS("r.watershed",
                        parameters = list(elevation='dem',
-                                         threshold=2,
                                          accumulation='acc',
                                          tci='topo_idx',
                                          spi='strm_pow',
