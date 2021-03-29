@@ -247,7 +247,7 @@ In this chunk we polygonize the resulting wetland classification map for the SBS
 SBS_classified <- raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))
 
 #Polygonize wetland classification map 
-SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin")
+SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin",workers=20)
 
 #Plot polygon wetland classification for SBS BEC Zone
 ggplot()+

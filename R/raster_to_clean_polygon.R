@@ -73,6 +73,7 @@ gdal_polygonizeR <- function(x, outshape=NULL, gdalformat = 'ESRI Shapefile',
 #' @param smooth Boolean. Should the resulting polygons geometry be simplified. 
 #' @param smooth_method String. Smoothing method to pass to \code{\link{smoothr}},
 #' smooth must be TRUE.
+#' @param workers Integer, number of threads to apply for parallel processing. 
 #' @param ... Any arguments to be passed to gdal_polgonizeR  
 #'
 #' @return Polygonized sf object representing the input raster categories. 
@@ -86,24 +87,25 @@ gdal_polygonizeR <- function(x, outshape=NULL, gdalformat = 'ESRI Shapefile',
 #'p <- raster_to_clean_polygon(r,2500,2500,TRUE,'chaikin')
 #' }
 #' @export
-raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smooth_method,...)
+raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smooth_method,workers=1,...)
 {
   
-  max_area_fill_m2<-units::as_units(max_area_fill_m2, "m2")
-  min_area_drop_m2<-units::as_units(min_area_drop_m2, "m2")
+  max_area_fill_m2<-units::set_units(max_area_fill_m2, "m2")
+  min_area_drop_m2<-units::set_units(min_area_drop_m2, "m2")
   
   # POLYGONIZE (AND DISSOLVE/MERGE BY CLASS)
   cat("Converting raster cetegories to polygon ... \n")
   p <- gdal_polygonizeR(x=r,...)
- 
+  
   sf::st_crs(p) <- sf::st_crs(r)
-   
+  
   # RENAME FIELDS
   names(p) <- c("class","geometry")
   
   # CALCULATE AREA (m2) (based on trim 25x25 data, so 625 m2 is one pixel)
   cat("Computing polygon areas ... \n")
-  p <- p %>% dplyr::mutate(area = sf::st_area(.))
+  p <- p %>% 
+    dplyr::mutate(area = sf::st_area(.))
   
   # FILTER AREA (i.e. DROP CRUMBS)
   cat("Filtering polygons by area ... \n")
@@ -111,17 +113,56 @@ raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smo
     dplyr::filter(area > min_area_drop_m2)
   
   # FILL HOLES
-  cat("Filling polygon holes ... \n")
-  p <- p %>%
-    smoothr::fill_holes(threshold = max_area_fill_m2)
+  cat("Filling polygon holes and smoothing, may take some time... \n")
   
-  # SMOOTH POLYGONS
-  if(smooth == T){
-    cat("Smoothing polygons ... \n")
-    p_sm <- smoothr::smooth(p, method = smooth_method)
+  #Break polygons up into chunks for parallel processing, store within list
+  n_poly <- nrow(p)
+  proc_list <- list()
+  delta<-ceiling(n_poly/workers)
+  strt_idx<-1
+  end_idx<-delta
+  
+  i<-1
+  
+  while(strt_idx<=n_poly)
+  {
+    if(end_idx<n_poly)
+    {
+      proc_list[[i]]<-p[c(strt_idx:end_idx),]
+    }else{
+      proc_list[[i]]<-p[c(strt_idx:n_poly),]
+    }
+    
+    strt_idx<-end_idx+1
+    end_idx<-end_idx+delta
+    print(c(strt_idx,",",end_idx))
+    i<-i+1
   }
   
-  return(p_sm)
+  #Function to fill and smooth a polygon
+  fill_smooth<-function(p)
+  {
+    p_fill <- p %>% 
+      smoothr::fill_holes(threshold = max_area_fill_m2)
+    
+    # # SMOOTH POLYGONS
+    if(smooth == T){
+      p_sm <- smoothr::smooth(p_fill, method = smooth_method)
+    }
+    
+    return(p_sm)
+  }
+  
+  #Map fill_smooth in parallel over polygon chunks
+  cl<-parallel::makeCluster(workers)
+  doParallel::registerDoParallel(cl)
+  fut<-foreach::foreach(sub_p=c(1:length(proc_list)),.packages=c('dplyr')) %dopar% {fill_smooth(proc_list[[sub_p]])}
+  parallel::stopCluster(cl)
+  
+  #Merge back to one sf object 
+  p_merge=do.call(rbind,fut)
+  
+  return(p_merge)
   
 }
 

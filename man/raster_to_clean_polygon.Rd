@@ -10,6 +10,7 @@ raster_to_clean_polygon(
   max_area_fill_m2,
   smooth,
   smooth_method,
+  workers = 1,
   ...
 )
 }
@@ -25,6 +26,8 @@ holes will be remove.}
 
 \item{smooth_method}{String. Smoothing method to pass to \code{\link{smoothr}},
 smooth must be TRUE.}
+
+\item{workers}{Integer, number of threads to apply for parallel processing.}
 
 \item{...}{Any arguments to be passed to gdal_polgonizeR}
 }
