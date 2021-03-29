@@ -72,6 +72,10 @@ set_grass_env<-function(gisbase,DEM,lyr_list,lyr_names,acc_thresh,seg=F,memory_m
                        overwrite = T)
   }
   
+  
+  rgrass7::execGRASS('g.extension',
+                     parameters = list(extension='r.stream.order'))
+  
   #Run r.watershed in GRASS to create DEM derivatives and stream network, 31 MB of RAM for 1 million cells
   if(seg==F)
   {
