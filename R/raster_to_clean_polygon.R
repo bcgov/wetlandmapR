@@ -107,7 +107,9 @@ raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smo
   # CALCULATE AREA (m2) (based on trim 25x25 data, so 625 m2 is one pixel)
   cat("Computing polygon areas ... \n")
   p <- p %>% 
-    dplyr::mutate(area = sf::st_area(.))
+    dplyr::mutate(area = sf::st_area(.)) %>%
+    dplyr::mutate(area = units::set_units(area,"m2"))
+    
   
   # FILTER AREA (i.e. DROP CRUMBS)
   cat("Filtering polygons by area ... \n")
