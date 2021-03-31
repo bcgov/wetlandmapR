@@ -211,7 +211,7 @@ First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using th
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #!!Change to local GRASS-GIS installation if not using Docker image!! 
-gisbase<-'/usr/lib/grass76/'
+gisbase<-'/usr/lib/grass78/'
 
 #Get list of raster layers and names 
 lyr_lst<-list()
@@ -242,7 +242,7 @@ In this chunk we polygonize the resulting wetland classification map for the SBS
 SBS_classified <- raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))
 
 #Polygonize wetland classification map 
-SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin",workers=20)
+SBS_Class_ply <- raster_to_clean_polygon(SBS_classified,2500,2500,T,"chaikin",workers=2)
 
 #Plot polygon wetland classification for SBS BEC Zone
 ggplot()+
@@ -267,9 +267,9 @@ for(i in 1:nrow(SBS_Class_ply)){
 
 ### Calculate upstream basin statistics ...
 
-Below we use the *X* and *Y* pour point coordinates of each wetland polygon, representing the lowest elevation location, and attribute a unique identifier field *UID*. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function as an example of computing upstream basin statistics for a point. 
+Below we use the *X* and *Y* pour point coordinates of each wetland polygon, representing the highest MFD accumulation, and attribute a unique identifier field *UID*. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function as an example of computing upstream basin statistics for a point. 
 
-```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, fig.cap="Mapped Classification Results by AOI as simplified polygons, with the standard devation of upstream topographic wetness for each polygons low elevation pour point."}
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, fig.cap="Mapped Classification Results by AOI as simplified polygons, with the standard devation of upstream topographic wetness for each polygons pour point."}
 #Set a random seed
 set.seed(42)
 
