@@ -90,6 +90,8 @@ gdal_polygonizeR <- function(x, outshape=NULL, gdalformat = 'ESRI Shapefile',
 raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smooth_method,workers=1,...)
 {
   
+  require(doParallel)
+  
   max_area_fill_m2<-units::set_units(max_area_fill_m2, "m2")
   min_area_drop_m2<-units::set_units(min_area_drop_m2, "m2")
   
