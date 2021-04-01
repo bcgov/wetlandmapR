@@ -339,13 +339,16 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 <p>The following vignette demonstrates the use of the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR</a> package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided with the package. This document is written to serve as a reference for performing similar classification in any area of interest.</p>
-<p>## Using the wetlandmapr Docker …</p>
-<p>A docker image based on the <a href="https://hub.docker.com/r/rocker/geospatial"><strong>rocker/geospatial:3.6.3</strong></a> image has been assembled for running the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR package</a> package. Assuming a local installation of Docker, the <a href="https://hub.docker.com/repository/docker/huntgdok/geospat">huntgdok/wetlandmapr:latest</a> image can be downloaded by passing the command:</p>
+<div id="using-the-wetlandmapr-docker" class="section level2">
+<h2>Using the wetlandmapr Docker …</h2>
+<p>A Docker image based on the <a href="https://hub.docker.com/r/rocker/geospatial"><strong>rocker/geospatial:3.6.3</strong></a> image has been assembled for running the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR package</a> package. Assuming a local installation of Docker is in place, the <a href="https://hub.docker.com/repository/docker/huntgdok/geospat">huntgdok/wetlandmapr:latest</a> image can be downloaded by passing the command below from your terminal:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="ex">docker</span> pull huntgdok/wetlandmapr:latest</span></code></pre></div>
 <p>once the image is in place, it can be run using the following Docker command</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="ex">docker</span> run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 --rm huntgdok/wetlandmapr:latest</span></code></pre></div>
-<p>where <em>APassword</em> is any password you want. To use with sudo privileges, add <em>-e ROOT=TRUE</em> to call. To view the running docker, go to the local URL <a href="http://localhost:8787">localhost</a> <em><a href="http://localhost:8787" class="uri">http://localhost:8787</a></em> in your internet browser. When prompted for a username and password, supply <em>rstudio</em> as a username, and the password that you set with <em>docker run</em>. You should then have a R-Studio session running with all the R and third party dependencies required for running the <a href="https://github.com/bcgov/wetlandmapR"><strong>wetlandmapR</strong></a> package. If the user is calculating upstream basin stats, they must first install GRASS-GIS addon <em>r.stream.extract</em> into the container. Alternatively, the package can be run locally assuming dependencies are in place.</p>
-<p>## Load R package dependencies …</p>
+<p>where <em>APassword</em> is any password you want. To use with sudo privileges, add <em>-e ROOT=TRUE</em> to call. To view the running docker, go to the local URL <a href="http://localhost:8787">localhost</a> <em><a href="http://localhost:8787" class="uri">http://localhost:8787</a></em> in your internet browser. When prompted for a username and password, supply <em>rstudio</em> as a username, and the password that you set with <em>docker run</em>. You should then have a R-Studio session running with all the R and third party dependencies required for running the <a href="https://github.com/bcgov/wetlandmapR"><strong>wetlandmapR</strong></a> package. Alternatively, the package can be run locally assuming all of the dependencies are installed.</p>
+</div>
+<div id="load-r-package-dependencies" class="section level2">
+<h2>Load R package dependencies …</h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw">library</span>(wetlandmapR)</span>
 <span id="cb3-2"><a href="#cb3-2"></a><span class="kw">library</span>(sf)</span>
 <span id="cb3-3"><a href="#cb3-3"></a><span class="kw">library</span>(tidyverse)</span>
@@ -353,6 +356,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb3-5"><a href="#cb3-5"></a><span class="kw">library</span>(RStoolbox)</span>
 <span id="cb3-6"><a href="#cb3-6"></a><span class="kw">library</span>(doParallel)</span>
 <span id="cb3-7"><a href="#cb3-7"></a><span class="kw">library</span>(rgrass7)</span></code></pre></div>
+</div>
 <div id="raster-data-set-up" class="section level2">
 <h2>Raster data set-up …</h2>
 <p>The following lines of code define an output directory for the terrain derivatives, load in an example digital elevation model (DEM) from the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR package</a>, and calls the <strong><em>wetlandmapR::create_dem_products</em></strong> function to generate terrain derivatives using <a href="http://www.saga-gis.org/">SAGA-GIS</a> and <a href="https://CRAN.R-project.org/package=RSAGA">RSAGA</a>. These terrain derivatives will be used to predict the wetland classes. All of the terrain outputs including a Sentinel-2 Band 4 raster are converted to a raster stack by calling the <strong><em>wetlandmapR::stack_raster</em></strong> function. The resulting raster stack is plotted below. As a pre-processing step, <strong><em>wetlandmapR::create_dem_products</em></strong> first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name <em>SINKS.sgrd</em>. Optionally, if a stream vector is provided it may be burned into the DEM by a distance defined by the user.</p>
@@ -441,19 +445,19 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb7-6"><a href="#cb7-6"></a><span class="co">#View rastLUT table </span></span>
 <span id="cb7-7"><a href="#cb7-7"></a>rastLUT</span></code></pre></div>
 <pre><code>##                                                V1        V2 V3
-## 1      /tmp/Rtmp5MEDhm/wetlandmapR_expl/CAREA.img     CAREA  1
-## 2      /tmp/Rtmp5MEDhm/wetlandmapR_expl/CPLAN.img     CPLAN  1
-## 3      /tmp/Rtmp5MEDhm/wetlandmapR_expl/CPROF.img     CPROF  1
-## 4        /tmp/Rtmp5MEDhm/wetlandmapR_expl/DAH.img       DAH  1
-## 5   /tmp/Rtmp5MEDhm/wetlandmapR_expl/EASTNESS.img  EASTNESS  1
-## 6       /tmp/Rtmp5MEDhm/wetlandmapR_expl/ELEV.img      ELEV  1
-## 7      /tmp/Rtmp5MEDhm/wetlandmapR_expl/MRVBF.img     MRVBF  1
-## 8  /tmp/Rtmp5MEDhm/wetlandmapR_expl/NORTHNESS.img NORTHNESS  1
-## 9      /tmp/Rtmp5MEDhm/wetlandmapR_expl/SINKS.img     SINKS  1
-## 10     /tmp/Rtmp5MEDhm/wetlandmapR_expl/SLOPE.img     SLOPE  1
-## 11   /tmp/Rtmp5MEDhm/wetlandmapR_expl/TOPOWET.img   TOPOWET  1
-## 12       /tmp/Rtmp5MEDhm/wetlandmapR_expl/TPI.img       TPI  1
-## 13  /tmp/Rtmp5MEDhm/wetlandmapR_expl/B4_SENT2.img  B4_SENT2  1</code></pre>
+## 1      /tmp/Rtmp2vttIz/wetlandmapR_expl/CAREA.img     CAREA  1
+## 2      /tmp/Rtmp2vttIz/wetlandmapR_expl/CPLAN.img     CPLAN  1
+## 3      /tmp/Rtmp2vttIz/wetlandmapR_expl/CPROF.img     CPROF  1
+## 4        /tmp/Rtmp2vttIz/wetlandmapR_expl/DAH.img       DAH  1
+## 5   /tmp/Rtmp2vttIz/wetlandmapR_expl/EASTNESS.img  EASTNESS  1
+## 6       /tmp/Rtmp2vttIz/wetlandmapR_expl/ELEV.img      ELEV  1
+## 7      /tmp/Rtmp2vttIz/wetlandmapR_expl/MRVBF.img     MRVBF  1
+## 8  /tmp/Rtmp2vttIz/wetlandmapR_expl/NORTHNESS.img NORTHNESS  1
+## 9      /tmp/Rtmp2vttIz/wetlandmapR_expl/SINKS.img     SINKS  1
+## 10     /tmp/Rtmp2vttIz/wetlandmapR_expl/SLOPE.img     SLOPE  1
+## 11   /tmp/Rtmp2vttIz/wetlandmapR_expl/TOPOWET.img   TOPOWET  1
+## 12       /tmp/Rtmp2vttIz/wetlandmapR_expl/TPI.img       TPI  1
+## 13  /tmp/Rtmp2vttIz/wetlandmapR_expl/B4_SENT2.img  B4_SENT2  1</code></pre>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a><span class="co">#Get the list of input predictor names (2nd column)</span></span>
 <span id="cb9-2"><a href="#cb9-2"></a>predList &lt;-<span class="st"> </span>rastLUT[,<span class="dv">2</span>]</span>
 <span id="cb9-3"><a href="#cb9-3"></a></span>

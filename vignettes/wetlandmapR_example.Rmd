@@ -11,9 +11,9 @@ vignette: >
   
   The following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery using example data provided with the package. This document is written to serve as a reference for performing similar classification in any area of interest. 
   
-  ## Using the wetlandmapr Docker ...
+## Using the wetlandmapr Docker ...
   
-  A docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command: 
+  A Docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Assuming a local installation of Docker is in place, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) image can be downloaded by passing the command below from your terminal: 
   
   ```{bash eval=FALSE}
   docker pull huntgdok/wetlandmapr:latest
@@ -24,9 +24,9 @@ vignette: >
   docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 --rm huntgdok/wetlandmapr:latest
   ```
   
-  where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. If the user is calculating upstream basin stats, they must first install GRASS-GIS addon *r.stream.extract* into the container. Alternatively, the package can be run locally assuming dependencies are in place. 
+  where *APassword* is any password you want. To use with sudo privileges, add *-e ROOT=TRUE* to call. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a username and password, supply *rstudio* as a username, and the password that you set with *docker run*. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. Alternatively, the package can be run locally assuming all of the dependencies are installed.
   
-  ## Load R package dependencies ... 
+## Load R package dependencies ... 
   
 ```{r message=FALSE, warning=FALSE}
 library(wetlandmapR)
