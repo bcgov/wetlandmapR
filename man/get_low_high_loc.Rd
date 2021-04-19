@@ -6,10 +6,10 @@
 of the minimum (or maximum) raster value within a provided polygon area
 of interest.}
 \usage{
-get_low_high_loc(dem, poly, low = TRUE)
+get_low_high_loc(lyr, poly, low = TRUE)
 }
 \arguments{
-\item{dem}{Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.}
+\item{lyr}{Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.}
 
 \item{poly}{An sf polygon object representing the area of interest in which to return the location 
 of the minimum (or maximum) raster value.}

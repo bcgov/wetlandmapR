@@ -153,20 +153,20 @@ run_basin_stats<-function(pour_pnts,covar_rast,stat_vect,procs=1,proc_type='FORK
 #' of the minimum (or maximum) raster value within a provided polygon area
 #' of interest.
 #'
-#' @param dem Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.
+#' @param lyr Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.
 #' @param poly An sf polygon object representing the area of interest in which to return the location 
 #' of the minimum (or maximum) raster value. 
 #' @param low Should the location of the  lowest or highest raster value be returned, defaults to true. 
 #' @return A numeric vector with he XY coordinated of the highest or lowest raster value in map units. 
 #' @export
-get_low_high_loc<-function(dem,poly,low=TRUE)
+get_low_high_loc<-function(lyr,poly,low=TRUE)
 {
-  if(class(dem)==class(raster()))
+  if(class(lyr)==class(raster()))
   {
-    dem <- stars::st_as_stars(dem)
+    lyr <- stars::st_as_stars(lyr)
   }
   
-  masked <- as.data.frame(dem[poly])
+  masked <- as.data.frame(lyr[poly])
   
   masked <- masked[complete.cases(masked),]
   
