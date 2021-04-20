@@ -272,7 +272,7 @@ low_pnts <- c()
 #Populate coordinated vector with coordinates of highest accumulation pixel within each wetland polygon 
 for(i in 1:nrow(SBS_Class_ply))
 {
-  low_pnts<-rbind(low_pnts,c(get_low_high_loc(lyr=acc,poly=st_geometry(SBS_Class_ply[i,]),i),low=F))
+  low_pnts<-rbind(low_pnts,cbind(get_low_high_loc(lyr=acc,poly=st_geometry(SBS_Class_ply[i,]),low=F),i))
 }
 
 ```
