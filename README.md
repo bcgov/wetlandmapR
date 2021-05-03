@@ -1,4 +1,5 @@
 # wetlandmapR
+[![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](<Redirect-URL>)
 R package for mapping wetland ecosystems using data driven R statistical methods like Random Forests and open source GIS.
 
 ## Introduction
