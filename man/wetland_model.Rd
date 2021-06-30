@@ -4,10 +4,25 @@
 \alias{wetland_model}
 \title{Wetland prediction model}
 \usage{
-wetland_model(qdatafn, model.type, model.folder, unique.rowname, predList,
-  predFactor, response.name, response.type, seed, response.target = NULL,
-  aoi.col = NULL, aoi.target = NULL, MODELfn = NULL,
-  na.action = "na.roughfix", ...)
+wetland_model(
+  qdatafn,
+  model.type,
+  model.folder,
+  unique.rowname,
+  predList,
+  predFactor,
+  response.name,
+  response.type,
+  seed,
+  response.target = NULL,
+  aoi.col = NULL,
+  aoi.target = NULL,
+  MODELfn = NULL,
+  na.action = "na.roughfix",
+  device.w = 10,
+  device.h = 10,
+  ...
+)
 }
 \arguments{
 \item{qdatafn}{training data filename.}

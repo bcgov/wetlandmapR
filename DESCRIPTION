@@ -1,6 +1,6 @@
 Package: wetlandmapR
 Title: Mapping Wetland Ecosystems
-Version: 0.0.0.9000
+Version: 1.0.0
 Authors@R: c(
     person(given = "Deepa", 
            family = "Filatow",
@@ -22,4 +22,10 @@ Depends:
     raster,
     ModelMap (>= 3.4.0.1),
 SystemRequirements: SAGA-GIS (v2.3+)
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Imports: 
+    magrittr

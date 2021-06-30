@@ -3,7 +3,6 @@
 \docType{package}
 \name{wetlandmapR}
 \alias{wetlandmapR}
-\alias{wetlandmapR-package}
 \title{wetlandmapR: Mapping Wetland Ecosystems}
 \description{
 Tools for mapping wetland ecosystems using data driven R statistical methods

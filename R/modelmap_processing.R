@@ -94,6 +94,8 @@ wetland_model <- function(qdatafn,
                           aoi.target = NULL,
                           MODELfn = NULL,
                           na.action = "na.roughfix",
+                          device.w=10,
+                          device.h=10,
                           ...
                           ) {
 
@@ -179,8 +181,11 @@ wetland_model <- function(qdatafn,
                                               unique.rowname = unique.rowname,
                                               # Model Validation Arguments
                                               prediction.type = "OOB",
-                                              device.type = "pdf",
-                                              cex = 1.2)
+                                              device.type="pdf",
+                                              cex = 1.2,
+                                              device.height = device.h,
+                                              device.width = device.w,
+                                              ...)
 
     # TO DO:
     # Save diagnostic values (section commented out below) to an output csv?
@@ -369,7 +374,7 @@ wetland_map <- function (model.out,
       aoi.target <- tail(strsplit(names(model.out)[i], "-")[[1]], n = 1)
 
       # Check that the aoi.target exists in aoi object's aoi.col field
-      if (!aoi.target %in% aoi[[aoi.col,]]) {
+      if (!aoi.target %in% as.character(as.data.frame(aoi)[,aoi.col])) {
 
         stop(paste0("The AOI used for this model run (", aoi.target,
                     ") does not exist in the AOI object provided."))

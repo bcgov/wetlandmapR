@@ -1,0 +1,326 @@
+---
+title: "wetlandmapR Example"
+output: rmarkdown::html_vignette
+author: "Deepa Filatow, Gillian Harvey, Hunter Gleason"
+vignette: > 
+  %\VignetteIndexEntry{wetlandmapR Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+---
+  
+  
+  Using example data provided with the package the following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery. This document is written to serve as a reference for performing similar classification in any area of interest. 
+  
+## Using the wetlandmapr Docker ...
+  
+  A Docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Please see the [Docker Install](https://docs.docker.com/engine/install/) page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) Docker image can be downloaded by passing the command below from your terminal or command prompt: 
+  
+  ```{bash eval=FALSE}
+  docker pull huntgdok/wetlandmapr:latest
+  ```
+  once the image has been successfully pulled, it can be run from the terminal or command prompt using the docker run call as shown below  
+  
+  ```{bash eval=FALSE}
+  docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 -v "/c/User/Desktop/Data:/home/rstudio/Data" --rm huntgdok/wetlandmapr:latest
+  ```
+  
+  where *APassword* is any password you want to use to log into *rocker*. To use with sudo privileges, add *-e ROOT=TRUE* to the docker run call as shown above.  The *-v* flag in the Docker run call above mounts a volume on the host machine, in this case */c/User/Desktop/Data* on a Windows machine, to a directory called *Data* on the Docker container, see [Use Volumes](https://docs.docker.com/storage/volumes/) for more information about mounting volumes. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a *username* and *password*, supply *rstudio* as a username, and the password that you set with the *docker run* call. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
+  
+  Alternatively, the package can be run locally assuming all of the required dependencies are installed.
+  
+## Load R package dependencies ... 
+  
+```{r message=FALSE, warning=FALSE}
+library(wetlandmapR)
+library(sf)
+library(tidyverse)
+library(bcmaps)
+library(RStoolbox)
+library(doParallel)
+library(rgrass7)
+```
+
+
+## Creating elevation derivatives ... 
+
+The following lines of code define an output directory for the terrain derivatives, load in an example digital elevation model (DEM) from the [wetlandmapR package](https://github.com/bcgov/wetlandmapR), and calls the ***wetlandmapR::create_dem_products*** function to generate terrain derivatives using [SAGA-GIS](http://www.saga-gis.org/) and [RSAGA](https://CRAN.R-project.org/package=RSAGA). These terrain derivatives will be used to predict the wetland classes.  As a pre-processing step, ***wetlandmapR::create_dem_products*** first hydrologically conditions the DEM by filling any sinks, a binary sinks layer is output under the name *SINKS.sgrd*. Optionally, if a stream vector is provided (*stream_vec*) it may be burned into the DEM by a distance (*burn_val*) in meters defined by the user. The terrain derivative layers specified by *products* (default all) are output to the directory provided to *outdir*. 
+
+```{r message=FALSE, warning=FALSE, results = FALSE}
+
+#Specify a output directory, we'll use the temporary directory for this example
+out_dir<-paste(tempdir(),"/wetlandmapR_expl",sep="")
+dir.create(out_dir)
+
+#Load a example digital elevation model DEM from wetlandmapR package 
+target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
+
+#Load freshwater atlas stream data from wetlandmapR package
+streams <- system.file('extdata','streams.shp',package = 'wetlandmapR')
+
+#Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function, burn FWA streams into DEM by 2 m ...
+create_dem_products(dem=target_dem,stream_vec = streams, burn_val=2, outdir=out_dir)
+```
+
+## Creating the raster stack, adding external predictors ... 
+
+In the code chunk below we create a list of paths to the raster images that we want to use to predict the different wetland classes, in this case most of the inputs were derived from the DEM using ***wetlandmapR::create_dem_products*** in the code above. However, in the example we add to this list a Sentinel-2 MSI Level-2A Band-4 (B4:Red) image as an additional predictor of the wetland classes. Note, any raster layer that the user wants to include for predicting the wetland classes can be added to the input list. We then call the ***wetlandmapR::stack_rasters*** function to create a *raster stack* object from the list of raster inputs specified by the *rasters* parameter. The *outdir* parameter is an optional output path defining where the stacked rasters are to be saved in '.img' format. When the aligned parameter is FALSE (default), the input raster will be re-sampled to the resolution and extent of a target raster provided by the *target_raster* parameter, in this case the provided DEM. The *rastLUTfn* is an optional parameter specifying the filename of a output raster lookup table (rastLUT) .csv file for use in ***wetlandmapR::wetland_map***. The resulting raster stack object is plotted below. 
+
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results = FALSE, fig.cap="Raster stack of SAGA terrain derivatives and Sentinel-2 Band 4 image."}
+
+#Get list of SAGA terrain derivatives within the output directory 
+raster_list <- list.files(out_dir, "sdat$", full.names = TRUE)
+
+#Drop the DEM w/ sinks and ASPECT layers from predictor list
+raster_list<-raster_list[!raster_list %in% c(file.path(out_dir,'ELEV_NoSink.sdat'),file.path(out_dir,'ASPECT.sdat'))]
+
+#E.g., Add external Sentinel-2 Band 4 data to the list of raster inputs from wetlandmapR package 
+raster_list<-append(raster_list,system.file("extdata", "B4_SENT2.tif", package = "wetlandmapR"))
+
+#Stack all raster inputs using the wetlandmapR 'stack_raster' function, passing 'raster_list' as input, output a raster Look-Up-Table 'rastLUT' CSV 
+raster_stack <- stack_rasters(rasters = raster_list, target_raster = target_dem, outdir = out_dir,rastLUTfn = file.path(out_dir,'rastLUT.csv'), aligned=FALSE)
+
+#Plot the new stack of raster objects (input layers)
+plot(raster_stack)
+
+```
+
+## Attribute raster values to training points ...
+
+This code chunck reads in example training points from the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package as a *sp* object with the wetland classes coded by the *T_W_Class_* field. In addition, biogeoclimatic zones (BEC) are loaded internally using the [bcmaps](https://github.com/bcgov/bcmaps) package, model outputs will be grouped by this layer by setting it as the *aoi* parameter. Using the raster stack of predictors plotted above as the *x* parameter, the ***wetlandmapR::grid_values_at_sp*** function attributes the intersecting raster values to the training points provided as the *y* parameter. Optionally, the resulting table table can be written to the output directory (*filename*) as a CSV, in this case named *"train_pnts_attributed.csv"*.
+
+
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results=FALSE, fig.cap="Sample points and BEC-ZONE AOI polygons."}
+#Load training data as sp  
+training_points<-st_read(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
+
+#Clip training point to subset AOI 
+ext<-extent(raster_stack)
+xmin = ext[1]
+xmax = ext[2]
+ymin=ext[3]
+ymax=ext[4]
+ext <- sf::st_sfc(sf::st_polygon(x = list(rbind(c(xmin, ymin), c(xmax, ymin), c(xmax, ymax), c(xmin, ymax), c(xmin, ymin)))), crs = sf::st_crs(training_points))
+training_points <- st_intersection(training_points,ext)
+
+training_points$OBJECTID<-c(1:nrow(training_points))
+
+#Load BEC zones from bcmaps 
+aoi_polys<-bec(ask=F) %>% st_crop(training_points)
+
+#Plot AOIs and training points
+ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
+  geom_sf(data=training_points)
+
+#Convert aoi_polys to sp
+aoi_polys<-as_Spatial(aoi_polys)
+
+#Assign filepath for output CSV
+attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
+
+#Attribute training points with intersected input raster values grouped by provided BEC AOI, write results to CSV. 
+grid_values_at_sp(x=raster_stack,
+                  y=training_points,
+                  filename = attributed_csv,
+                  aoi = aoi_polys)
+
+
+```
+
+##  Setup predictor list and raster look-up-table (LUT) ...
+
+Read in the *rastLUT.csv* file which was output by ***wetlandmapR::stack_rasters***, the first column of this CSV contains the file path to each input raster layer, while the second column indicates the name of the layer, and the third column indicates the band index to use, we recommend providing only single band inputs. Here we get a list of the raster layer names from the *rastLUT* table, and create a new directory for our model outputs within our current output directory.
+
+```{r message=FALSE, warning=FALSE}
+#Read in rastLUT table as data.frame from the rastLUTfn path provide to 'stack_rasters' above
+rastLUT <- read.csv(file.path(out_dir,'rastLUT.csv'),
+                    header = FALSE,
+                    stringsAsFactors = FALSE)
+
+#View rastLUT table 
+rastLUT
+
+#Get the list of input predictor names (2nd column)
+predList <- rastLUT[,2]
+
+
+#Create a model output directory called 'output' within 'out_dir' directory
+dir.create(file.path(out_dir,"output"))
+
+```
+
+
+## Run model and diagnostics ...
+
+Below we fit a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the input raster layers above. We declare the response field to be the "T_W_Class" field, and set *response.type* as categorical. The "OBJECTID" is defined as identifying unique observations. We specify that we want to use the "BGC_ZONE" column to identify separate AOIs, and a separate model is fit for each unique AOI polygon. The *responce.target* parameter is for subsetting the training dataset, in this case we use all wetland categories. We also define the "SINKS" column (input) to be a factor variable. The results include a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. Model outputs will be output to the *model.folder* directory, in this case "output". Because the modeling process in random, a seed it set for reproducibility. 
+
+```{r message=FALSE, warning=FALSE}
+#Fit a random forest model 
+model.out <- wetland_model(qdatafn = attributed_csv,
+                           model.type = "RF",
+                           model.folder = file.path(out_dir,"output"),
+                           unique.rowname = "OBJECTID",
+                           predList = predList,
+                           predFactor = c('SINKS'),
+                           response.name = "T_W_Class_",
+                           response.type = "categorical",
+                           seed = 42,
+                           response.target = as.vector(unique(training_points$T_W_Class_)),
+                           aoi.col = "BGC_ZONE")
+```
+
+
+## Create map(s) from model ...
+
+Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out* for each mdoel / AOI. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and BEC AOI SpatialPolygons (*aoi*), the AOI column (*aoi.col*) is defined as the *ZONE* column. 
+
+```{r warning=FALSE, message=FALSE, results=FALSE}
+#Map random forest results 
+wetland_map(model.out = model.out,
+            model.folder = file.path(out_dir,"output"),
+            rastLUTfn = rastLUT,
+            aoi = aoi_polys,
+            aoi.col = "ZONE")
+```
+
+
+## Plot map results
+
+Plot the output classified ERDAS images by AOI ...
+
+```{r fig.width=6, fig.height=6, warning=FALSE, message=FALSE, fig.cap="Mapped Classification Results by AOI"}
+#Get .img file paths from temporary directory 
+SBS.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "SBS")
+ESSF.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "ESSF")
+SBS.img<-paste(SBS.dir,'_map.img',sep='')
+ESSF.img<-paste(ESSF.dir,'_map.img',sep='')
+SBS.key<-paste(SBS.dir,'_map_key.csv',sep='')
+ESSF.key<-paste(ESSF.dir,'_map_key.csv',sep='')
+
+#Plot map results for each AOI
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "SBS Class")
+SBS_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.key,sep=''))
+SBS_key
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "ESSF Class")
+ESSF_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.key,sep=''))
+ESSF_key
+```
+
+
+## Attribute upstream basin stats ...
+
+Optionally, after mapping has been completed, upstream basin attributes can be attributed to any point within the study area using ***wetlandmapR::upstream_basin_stats***.
+
+### Set up the GRASS-GIS environment:
+
+First we set up a [**GRASS-GIS**](https://grass.osgeo.org/) environment using the [**rgrass7**](https://cran.r-project.org/web/packages/rgrass7/index.html) package. This is done by calling ***wetlandmapR::set_grass_env***. This function requires that the path the [**GRASS-GIS**](https://grass.osgeo.org/) binaries be provided to the *gisbase* parameter. A list of raster inputs *raster* objects to be summarized, such as those output above, must be given as the *lyr_list* parameter, and associated vector of raster layer names as the *lyr_names* parameter. Streams are derived using the GRASS-GIS r. watershed flow tracing algorithm, and an accumulation threshold (in cells) must be provided *acc_thresh*,i.e., lower values will generate more denser stream networks. 
+
+```{r warning=FALSE, message=FALSE, results=FALSE}
+#!!Change to local GRASS-GIS installation if not using Docker image!! 
+gisbase<-'/usr/lib/grass76/'
+
+#Get list of raster layers and names from the rastLUT table. 
+lyr_lst<-list()
+lyr_names<-c()
+for(lyr in  c(1:dim(raster_stack)[3]))
+{
+  lyr_lst[[lyr]]<-raster(rastLUT[lyr,1])
+  lyr_names[lyr]<-rastLUT[lyr,2]
+}
+
+#Initialize a GRASS-GIS, write the raster objects to a GRASS-GIS environment, derive streams and create GRASS DEM derivatives using r.watershed 
+set_grass_env(gisbase=gisbase,
+              DEM=raster(target_dem),
+              lyr_list=lyr_lst,
+              lyr_names=lyr_names,
+              acc_thresh = 1000)
+```
+
+
+
+### Polygonize wetland classification map ...
+
+In this chunk we polygonize the resulting wetland classification map for the SBS BEC Zone generated by ***wetlandmapR::wetland_map*** using the ***wetlandmapR::raster_to_clean_polygon*** function. The classified raster for the SBS zone is provided as the input raster *r*, any polygons with an area less than 2500 square meters are removed (*min_area_drop_m2*), and any holes larger than 2500 square meters are filled (*max_area_fill_m2*). Optionally the resulting wetland polygons can be smoothed using the [smoothr](https://cran.r-project.org/web/packages/smoothr/vignettes/smoothr.html) package by setting *smooth* as TRUE, and the desired smoothing method (*smooth_method*). The *workers* parameter defines the number of computer cores to use for the polygonization. The polygonized wetland classes are plotted below for the SBS model output.  
+
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, fig.cap="Mapped Classification Results by AOI as simplified polygons"}
+
+#Load the wetland classification map for the SBS BEC Zone as raster object
+SBS_classified <- raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))
+
+#Polygonize wetland classification map 
+SBS_Class_ply <- raster_to_clean_polygon(r=SBS_classified,min_area_drop_m2=2500,max_area_fill=2500,smooth=T,smooth_method="chaikin",workers=2)
+
+#Plot polygon wetland classification for SBS BEC Zone
+ggplot()+
+  geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
+  scale_color_brewer(palette = "Spectral")+
+  labs(fill = "SBS Class")
+```
+
+
+### Identify high accumulation pour points ...
+
+With the classified raster output converted to polygons, pour points for each polygon can be identified using the flow accumulation raster output from the GRASS-GIS r.watershed module. This is done by applying the ***wetlandmapR::get_low_high_loc*** function to each polygon (*poly*) and using the accumulation raster as input (*lyr*), and creating a matrix from the X-Y coordinates returned, along with a unique polygon identifier field *UID*. The *low* parameter return the location of the minimum raster value bounded by the provided polygon when TRUE, and maximum value when set to FALSE. 
+
+```{r message=FALSE, warning=FALSE}
+
+#Load the accumulation layer output from `set_grass_env` model as raster object 
+acc<-raster(readRAST('acc',ignore.stderr = get.ignore.stderrOption()))
+
+#Initialize an empty coordinates vector 
+low_pnts <- c()
+
+#Populate coordinated vector with coordinates of highest accumulation pixel within each wetland polygon 
+for(i in 1:nrow(SBS_Class_ply))
+{
+  low_pnts<-rbind(low_pnts,cbind(get_low_high_loc(lyr=acc,poly=st_geometry(SBS_Class_ply[i,]),low=F),i))
+}
+
+```
+
+
+### Calculate upstream basin statistics ...
+
+Below we use the *X* and *Y* pour point coordinates of each wetland polygon computed above, representing the highest flow accumulation. We then compute the mean and standard deviation of upstream elevation and topographic wetness for each pour point using the ***wetlandmapR::run_basin_stats*** function (*pour_pnts*). Note, any layers provided to ***wetlandmapR::set_grass_env*** could be provided as input here (*covar_rast*), and there are many different statistics that can be calculated (*stat_vect*). The *procs* parameter is synonymous with*workers*, and is the number of computer cores to apply for processing.
+
+```{r message=FALSE, warning=FALSE}
+#Set a random seed
+set.seed(42)
+
+#Create a data frame of pour points for purpose of example 
+pour_pnts<-as.data.frame(low_pnts)
+colnames(pour_pnts)<-c('X','Y','UID')
+
+#View pour point table 
+head(pour_pnts)
+
+#Set to number of cores minus 1 
+cores<-parallel::detectCores()-1
+
+#For the random pour points calculate upstream basin mean and standard deviation for elevation and topographic wetness.
+basin_stats<-run_basin_stats(pour_pnts = pour_pnts,
+                             covar_rast = c('ELEV','TOPOWET','ELEV','TOPOWET'),
+                             stat_vect = c('MEAN','MEAN','STDDEV','STDDEV'),
+                             procs = cores)
+```
+
+###Merge upstream results with spatial pour points coordiante table ...
+
+The output upstream statics data.frame (*basin_stats*) is then merged back to the pour points coordinates table (*pour_pnts*) by UID and plotted by the resulting standard deviation of upstream topographic wetness.
+
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, fig.cap="Mapped Classification Results by AOI as simplified polygons, with the standard devation of upstream topographic wetness for each polygons pour point."}
+
+#View upstream basin statistics 
+head(basin_stats)
+
+#Merge the upstream statistics with pour point coordinates by unique ID field (UID) 
+pour_pnts <- merge(pour_pnts,basin_stats,by="UID")
+
+#Overlay wetland low elevation pour points sized by the standard deviation of upstream topographic wetness
+#over the original wetland polygons.
+ggplot()+
+  geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
+  scale_color_brewer(palette = "Spectral")+
+  geom_point(data=pour_pnts,aes(x=X,y=Y,size=TOPOWET_STDDEV),alpha=3/10)+
+  labs(fill = "SBS Class")
+
+```

@@ -4,8 +4,13 @@
 \alias{stack_rasters}
 \title{Create a stack of rasters}
 \usage{
-stack_rasters(rasters, aligned = FALSE, target_raster = NULL,
-  outdir = NULL, rastLUTfn = NULL)
+stack_rasters(
+  rasters,
+  aligned = FALSE,
+  target_raster = NULL,
+  outdir = NULL,
+  rastLUTfn = NULL
+)
 }
 \arguments{
 \item{rasters}{filename(s) (character) of raster files to be
