@@ -96,7 +96,7 @@ raster_to_clean_polygon<-function(r,min_area_drop_m2,max_area_fill_m2,smooth,smo
   min_area_drop_m2<-units::set_units(min_area_drop_m2, "m2")
   
   # POLYGONIZE (AND DISSOLVE/MERGE BY CLASS)
-  cat("Converting raster cetegories to polygon ... \n")
+  cat("Converting raster categories to polygon ... \n")
   p <- gdal_polygonizeR(x=r,...)
   
   sf::st_crs(p) <- sf::st_crs(r)
