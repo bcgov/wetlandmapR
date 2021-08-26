@@ -62,11 +62,10 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   {
     streams_r <- file.path(tempdir(), "streams_r.tif")
     lyr_name <- tools::file_path_sans_ext(basename(stream_vec))
-
-    src_dataset <- system.file(stream_vec, package="gdalUtils")
     
-    gdalUtils::gdal_rasterize(src_datasource = src_dataset,
+    gdalUtils::gdal_rasterize(src_datasource = stream_vec,
                               dst_filename = streams_r,
+                              burn = 1,
                               l = lyr_name,
                               tr = c(x_res,y_res),
                               te = c(x_min,y_min,x_max,y_max),
