@@ -62,11 +62,18 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   {
     streams_r <- file.path(tempdir(), "streams_r.tif")
     lyr_name <- tools::file_path_sans_ext(basename(stream_vec))
-    cmd <- paste("gdal_rasterize -l ", lyr_name, " -burn 1 -tr ", 
-                 x_res, " ", y_res, " -te ", x_min, " ", y_min, " ", 
-                 x_max, " ", y_max, " -ot Byte ", stream_vec, " ", 
-                 streams_r, sep = "")
-    system(cmd)
+
+    src_dataset <- system.file(stream_vec, package="gdalUtils")
+    
+    gdalUtils::gdal_rasterize(src_datasource = src_dataset,
+                              dst_filename = streams_r,
+                              l = lyr_name,
+                              tr = c(x_res,y_res),
+                              te = c(x_min,y_min,x_max,y_max),
+                              ot='Byte',
+                              output_Raster = FALSE)
+    
+    
     streams_saga <- file.path(tempdir(), "streams_saga_r.sgrd")
     streams_resamp <- file.path(tempdir(), "streams_resamp.sgrd")
     RSAGA::rsaga.import.gdal(in.grid = streams_r, out.grid = streams_saga, env = env)
