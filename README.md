@@ -51,5 +51,7 @@ docker run -e PASSWORD=URPassword -p 8787:8787 --rm huntgdok/wetlandmapr:latest
 ``` 
 Where `URPassword` is any password of your choice, and username `rstudio`. The running container can be viewed by passing [localhost](http://localhost:8787/) to your browser. Be sure to copy all outputs locally before exiting as all data will be lost.  
 
+PLEASE NOTE: A Docker subscription is required if using the *wetlandmapR* Docker image for commercial use, see service agreement [Docker Subscription Service Agreement](https://www.docker.com/legal/docker-subscription-service-agreement?utm_campaign=2021-08-31-business-tier-launch&utm_medium=email&utm_source=mailgun&utm_content=service-agreement) for more information. 
+
 ## Examples
 See the example vignette which describes [wetlandmapR_example](https://htmlpreview.github.io/?https://github.com/bcgov/wetlandmapR/blob/significant_update_HG/vignettes/wetlandmapR_example.html) how to use the functions in this package together for mapping wetlands.
