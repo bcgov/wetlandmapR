@@ -28,12 +28,13 @@ with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 "CPLAN", "CPROF", "TOPOWET", "CAREA"). If not provided, this parameter
 defaults to generating all products.}
 
-\item{param_values}{This is a list of lists corresponding to param_vect. For each
-parameter specified in 'param_vect', the additional parameters for the corresponding
-SAGA module must be specified using a list of those additional parameters and their values.}
+\item{param_values}{This is a list of lists, and the order corresponding to \code{param_vect}. For each
+parameter specified in \code{param_vect}, the additional parameters for the corresponding
+SAGA module must be specified using a list of those additional SAGA parameters and their values. 
+Defaults to NULL.}
 
-\item{param_vect}{character. Similar to the products parameter, this is a vector of
-the SAGA module names (specified in products parameter) for which non-default
+\item{param_vect}{vector (character). Similar to the \code{products} parameter, this is a vector of
+the SAGA module names (see Details section below) for which non-default
 parameters will be passed. Defaults to NULL.}
 }
 \description{

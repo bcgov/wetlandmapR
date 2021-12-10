@@ -37,7 +37,7 @@ This function assumes `set_grass_env` has been called. This function attributes 
 ## Installation
 Get the latest version from GitHub with:
 ```r
-devtools::install_github("bcgov/wetlandmapR")
+remotes::install_github("bcgov/wetlandmapR",ref="master")
 ```
 
 ## Or with Docker 
