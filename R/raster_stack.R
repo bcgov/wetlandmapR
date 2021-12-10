@@ -29,6 +29,12 @@
 #'   with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 #'   "CPLAN", "CPROF", "TOPOWET", "CAREA"). If not provided, this parameter
 #'   defaults to generating all products.
+#' @param param_vect character. Similar to the products parameter, this is a vector of
+#' the SAGA module names (specified in products parameter) for which non-default
+#' parameters will be passed. Defaults to NULL.
+#' @param param_values This is a list of lists corresponding to param_vect. For each
+#' parameter specified in 'param_vect', the additional parameters for the corresponding
+#' SAGA module must be specified using a list of those additional parameters and their values.   
 #'
 #' @return NULL
 #'
@@ -38,7 +44,7 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_list=NULL,param_values=NULL) {
   env <- RSAGA::rsaga.env()
   
   #Get dem raster params
@@ -105,6 +111,22 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   products.out <- file.path(outdir, products)
   raster::extension(products.out) <- "sgrd"
   
+  
+  get_param_lst_idx <- function(product)
+  {
+    idx<-NULL
+    for(i in c(1:length(param_list)))
+    {
+      if(product == param_list[i])
+      {
+        idx<-i
+      }
+      i<-i+1
+    }
+    return(idx)
+  }
+  
+  
   for (i in 1:length(products)) {
     p <- products[i]
     
@@ -151,20 +173,20 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     } else if (p == "DAH") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 12,
-                                param = list(DEM = dem.sgrd,
-                                             DAH = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                             DAH = products.out[i]),param_values[[get_param_lst_idx("DAH")]]),
                                 env = env)
     } else if (p == "MRVBF") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 8,
-                                param = list(DEM = dem.sgrd,
-                                             MRVBF = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                             MRVBF = products.out[i]),param_values[[get_param_lst_idx("MRVBF")]]),
                                 env = env)
     } else if (p == "TPI") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 18,
-                                param = list(DEM = dem.sgrd,
-                                             TPI = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                             TPI = products.out[i]),param_values[[get_param_lst_idx("TPI")]]),
                                 env = env)
     } else if (p == "TOPOWET") {
       RSAGA::rsaga.wetness.index(in.dem = dem.sgrd,
@@ -173,8 +195,8 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     } else if (p == "CAREA") {
       RSAGA::rsaga.geoprocessor(lib = "ta_hydrology",
                                 module = 0,
-                                param = list(ELEVATION = dem.sgrd,
-                                             FLOW = products.out[i]),
+                                param = append(list(ELEVATION = dem.sgrd,
+                                             FLOW = products.out[i]),param_values[[get_param_lst_idx("CAREA")]]),
                                 env = env)
     }
   }

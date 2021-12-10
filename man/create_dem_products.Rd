@@ -9,7 +9,9 @@ create_dem_products(
   stream_vec = NULL,
   burn_val = NULL,
   outdir,
-  products = NULL
+  products = NULL,
+  param_list = NULL,
+  param_values = NULL
 )
 }
 \arguments{
@@ -25,6 +27,14 @@ create_dem_products(
 with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 "CPLAN", "CPROF", "TOPOWET", "CAREA"). If not provided, this parameter
 defaults to generating all products.}
+
+\item{param_values}{This is a list of lists corresponding to param_vect. For each
+parameter specified in 'param_vect', the additional parameters for the corresponding
+SAGA module must be specified using a list of those additional parameters and their values.}
+
+\item{param_vect}{character. Similar to the products parameter, this is a vector of
+the SAGA module names (specified in products parameter) for which non-default
+parameters will be passed. Defaults to NULL.}
 }
 \description{
 Creates raster derivatives (products) from an input Digital Elevation Model
