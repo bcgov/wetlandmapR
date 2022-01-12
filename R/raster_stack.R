@@ -59,15 +59,15 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   #Get dem raster params
   r<-stars::read_stars(dem,n_proxy=n_proxy)
   
-  r_dims<-st_dimensions(r)
+  r_dims<-stars::st_dimensions(r)
   
   x_res<-r_dims$x$delta
   y_res<-r_dims$y$delta
   
-  x_min<-st_bbox(r)[1]
-  x_max<-st_bbox(r)[3]
-  y_min<-st_bbox(r)[2]
-  y_max<-st_bbox(r)[4]
+  x_min<-sf::st_bbox(r)[1]
+  x_max<-sf::st_bbox(r)[3]
+  y_min<-sf::st_bbox(r)[2]
+  y_max<-sf::st_bbox(r)[4]
   
   
   # Convert DEM to SAGA grid
