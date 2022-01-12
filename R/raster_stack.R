@@ -45,7 +45,7 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL,n_proxy=10^10) {
   
   if(is.null(param_vect))
   {
@@ -57,15 +57,17 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   env <- RSAGA::rsaga.env()
   
   #Get dem raster params
-  r<-raster::raster(dem)
+  r<-stars::read_stars(dem,n_proxy=n_proxy)
   
-  x_res<-res(r)[1]
-  y_res<-res(r)[2]
+  r_dims<-st_dimensions(r)
   
-  x_min<-extent(r)[1]
-  x_max<-extent(r)[2]
-  y_min<-extent(r)[3]
-  y_max<-extent(r)[4]
+  x_res<-r_dims$x$delta
+  y_res<-r_dims$y$delta
+  
+  x_min<-st_bbox(r)[1]
+  x_max<-st_bbox(r)[3]
+  y_min<-st_bbox(r)[2]
+  y_max<-st_bbox(r)[4]
   
   
   # Convert DEM to SAGA grid
@@ -117,9 +119,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     products <- toupper(products)
   }
   
-  products.out <- file.path(outdir, products)
-  raster::extension(products.out) <- "sgrd"
-  
+  products.out <- paste(file.path(outdir,products),".sgrd",sep="")
   
   get_param_lst_idx <- function(product)
   {
