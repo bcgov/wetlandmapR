@@ -47,7 +47,7 @@
 #' @export
 create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
   
-  if(is.NUll(param_vect))
+  if(is.null(param_vect))
   {
     param_vect<-c(NULL)
   }else{
