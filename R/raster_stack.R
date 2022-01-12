@@ -116,13 +116,15 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   get_param_lst_idx <- function(product)
   {
     idx<-1
-    for(i in c(1:length(param_vect)))
-    {
-      if(product == param_vect[i])
+    if(!is.null(param_vect[1])){
+      for(i in c(1:length(param_vect)))
       {
-        idx<-i
+        if(product == param_vect[i])
+        {
+          idx<-i
+        }
+        i<-i+1
       }
-      i<-i+1
     }
     return(idx)
   }
@@ -141,7 +143,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                   out.aspect = products.out[i],
                                   unit.aspect = "radians",
                                   env = env)
-
+      
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
       
       
@@ -161,8 +163,8 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                            USE_NODATA=1,
                                            GRIDS=file.path(outdir,'EASTNESS.sgrd'),
                                            RESULT=file.path(outdir,'EASTNESS.sgrd')))
-    
-       
+      
+      
     } else if (p == "CPLAN") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
                                   out.cplan = products.out[i],
@@ -175,19 +177,19 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 12,
                                 param = append(list(DEM = dem.sgrd,
-                                             DAH = products.out[i]),param_values[[get_param_lst_idx("DAH")]]),
+                                                    DAH = products.out[i]),param_values[[get_param_lst_idx("DAH")]]),
                                 env = env)
     } else if (p == "MRVBF") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 8,
                                 param = append(list(DEM = dem.sgrd,
-                                             MRVBF = products.out[i]),param_values[[get_param_lst_idx("MRVBF")]]),
+                                                    MRVBF = products.out[i]),param_values[[get_param_lst_idx("MRVBF")]]),
                                 env = env)
     } else if (p == "TPI") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 18,
                                 param = append(list(DEM = dem.sgrd,
-                                             TPI = products.out[i]),param_values[[get_param_lst_idx("TPI")]]),
+                                                    TPI = products.out[i]),param_values[[get_param_lst_idx("TPI")]]),
                                 env = env)
     } else if (p == "TOPOWET") {
       RSAGA::rsaga.wetness.index(in.dem = dem.sgrd,
@@ -197,7 +199,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       RSAGA::rsaga.geoprocessor(lib = "ta_hydrology",
                                 module = 0,
                                 param = append(list(ELEVATION = dem.sgrd,
-                                             FLOW = products.out[i]),param_values[[get_param_lst_idx("CAREA")]]),
+                                                    FLOW = products.out[i]),param_values[[get_param_lst_idx("CAREA")]]),
                                 env = env)
     }
   }
