@@ -29,6 +29,13 @@
 #'   with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 #'   "CPLAN", "CPROF", "TOPOWET", "CAREA"). If not provided, this parameter
 #'   defaults to generating all products.
+#' @param param_vect vector (character). Similar to the \code{products} parameter, this is a vector of
+#' the SAGA module names (see Details section below) for which non-default
+#' parameters will be passed. Defaults to NULL.
+#' @param param_values This is a list of lists, and the order corresponding to \code{param_vect}. For each
+#' parameter specified in \code{param_vect}, the additional parameters for the corresponding
+#' SAGA module must be specified using a list of those additional SAGA parameters and their values. 
+#' Defaults to NULL.    
 #'
 #' @return NULL
 #'
@@ -38,7 +45,15 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
+  
+  if(is.null(param_vect))
+  {
+    param_vect<-c(NULL)
+  }else{
+    param_values<-append(list(NULL),param_values)
+  }
+  
   env <- RSAGA::rsaga.env()
   
   #Get dem raster params
@@ -62,11 +77,17 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   {
     streams_r <- file.path(tempdir(), "streams_r.tif")
     lyr_name <- tools::file_path_sans_ext(basename(stream_vec))
-    cmd <- paste("gdal_rasterize -l ", lyr_name, " -burn 1 -tr ", 
-                 x_res, " ", y_res, " -te ", x_min, " ", y_min, " ", 
-                 x_max, " ", y_max, " -ot Byte ", stream_vec, " ", 
-                 streams_r, sep = "")
-    system(cmd)
+    
+    gdalUtils::gdal_rasterize(src_datasource = stream_vec,
+                              dst_filename = streams_r,
+                              burn = 1,
+                              l = lyr_name,
+                              tr = c(x_res,y_res),
+                              te = c(x_min,y_min,x_max,y_max),
+                              ot='Byte',
+                              output_Raster = FALSE)
+    
+    
     streams_saga <- file.path(tempdir(), "streams_saga_r.sgrd")
     streams_resamp <- file.path(tempdir(), "streams_resamp.sgrd")
     RSAGA::rsaga.import.gdal(in.grid = streams_r, out.grid = streams_saga, env = env)
@@ -99,6 +120,24 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   products.out <- file.path(outdir, products)
   raster::extension(products.out) <- "sgrd"
   
+  
+  get_param_lst_idx <- function(product)
+  {
+    idx<-1
+    if(!is.null(param_vect[1])){
+      for(i in c(1:length(param_vect)))
+      {
+        if(product == param_vect[i])
+        {
+          idx<-i+1
+        }
+        i<-i+1
+      }
+    }
+    return(idx)
+  }
+  
+  
   for (i in 1:length(products)) {
     p <- products[i]
     
@@ -112,7 +151,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                   out.aspect = products.out[i],
                                   unit.aspect = "radians",
                                   env = env)
-
+      
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
       
       
@@ -132,8 +171,8 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                            USE_NODATA=1,
                                            GRIDS=file.path(outdir,'EASTNESS.sgrd'),
                                            RESULT=file.path(outdir,'EASTNESS.sgrd')))
-    
-       
+      
+      
     } else if (p == "CPLAN") {
       RSAGA::rsaga.slope.asp.curv(in.dem = dem.sgrd,
                                   out.cplan = products.out[i],
@@ -145,20 +184,20 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     } else if (p == "DAH") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 12,
-                                param = list(DEM = dem.sgrd,
-                                             DAH = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                                    DAH = products.out[i]),param_values[[get_param_lst_idx("DAH")]]),
                                 env = env)
     } else if (p == "MRVBF") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 8,
-                                param = list(DEM = dem.sgrd,
-                                             MRVBF = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                                    MRVBF = products.out[i]),param_values[[get_param_lst_idx("MRVBF")]]),
                                 env = env)
     } else if (p == "TPI") {
       RSAGA::rsaga.geoprocessor(lib = "ta_morphometry",
                                 module = 18,
-                                param = list(DEM = dem.sgrd,
-                                             TPI = products.out[i]),
+                                param = append(list(DEM = dem.sgrd,
+                                                    TPI = products.out[i]),param_values[[get_param_lst_idx("TPI")]]),
                                 env = env)
     } else if (p == "TOPOWET") {
       RSAGA::rsaga.wetness.index(in.dem = dem.sgrd,
@@ -167,8 +206,8 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     } else if (p == "CAREA") {
       RSAGA::rsaga.geoprocessor(lib = "ta_hydrology",
                                 module = 0,
-                                param = list(ELEVATION = dem.sgrd,
-                                             FLOW = products.out[i]),
+                                param = append(list(ELEVATION = dem.sgrd,
+                                                    FLOW = products.out[i]),param_values[[get_param_lst_idx("CAREA")]]),
                                 env = env)
     }
   }
