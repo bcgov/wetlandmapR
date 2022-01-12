@@ -45,7 +45,15 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=c(NULL),param_values=list(NULL)) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
+  
+  if(is.NUll(param_vect))
+  {
+    param_vect<-c(NULL)
+  }else{
+    param_values<-append(list(NULL),param_values)
+  }
+  
   env <- RSAGA::rsaga.env()
   
   #Get dem raster params
@@ -121,7 +129,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       {
         if(product == param_vect[i])
         {
-          idx<-i
+          idx<-i+1
         }
         i<-i+1
       }
