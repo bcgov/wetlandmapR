@@ -21,8 +21,8 @@
 #'   CAREA:   Top-Down Flow Accumulation.
 #'
 #'
-#' @param dem filename (character) of input DEM raster.
-#' @param stream_vec (Optional) filename (character) to existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
+#' @param dem filename (character) or SpatRaster input DEM raster.
+#' @param stream_vec (Optional)  filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
 #' @param burn_val (Optional) double. The value of Epsilon for burning stream network into DEM.  
 #' @param outdir output folder path (character).
 #' @param products character. The DEM products to be created. Can be a vector
@@ -45,73 +45,85 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL,n_proxy=10^10) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
   
+  #Check if 'param_vect' provided
   if(is.null(param_vect))
   {
+    #Set as char
     param_vect<-c(NULL)
   }else{
+    #Add NULL as first list entry 
     param_values<-append(list(NULL),param_values)
   }
   
+  #Find SAGA installation 
   env <- RSAGA::rsaga.env()
   
-  #Get dem raster params
-  r<-stars::read_stars(dem,n_proxy=n_proxy)
-  
-  r_dims<-stars::st_dimensions(r)
-  
-  x_res<-r_dims$x$delta
-  y_res<-r_dims$y$delta
-  
-  x_min<-sf::st_bbox(r)[1]
-  x_max<-sf::st_bbox(r)[3]
-  y_min<-sf::st_bbox(r)[2]
-  y_max<-sf::st_bbox(r)[4]
+  #Get dem raster as terra
+  if(class(dem)[1]=="SpatRaster")
+  {
+    r<-dem
+  }else{
+    r<-terra::rast(dem) 
+  }
   
   
   # Convert DEM to SAGA grid
   dem.sgrd <- file.path(outdir, "ELEV.sgrd")
+  dem.sdat <- file.path(outdir, "ELEV.sdat")
   RSAGA::rsaga.import.gdal(in.grid=dem,out.grid=dem.sgrd)
   
   #Optionally burn in a existing stream network
   if(!is.null(stream_vec))
   {
+    
+    #Rasterize stream lyr
     streams_r <- file.path(tempdir(), "streams_r.tif")
     lyr_name <- tools::file_path_sans_ext(basename(stream_vec))
     
-    gdalUtils::gdal_rasterize(src_datasource = stream_vec,
-                              dst_filename = streams_r,
-                              burn = 1,
-                              l = lyr_name,
-                              tr = c(x_res,y_res),
-                              te = c(x_min,y_min,x_max,y_max),
-                              ot='Byte',
-                              output_Raster = FALSE)
     
+    if(class(stream_vec)=="character")
+    {
+      stream_vec<-terra::vect(stream_vec)
+    }
     
+    terra_dem<- terra::rast(dem.sdat)
+    
+    #Reproject streams if necessary
+    if(terra::crs(stream_vec)!=terra::crs(terra_dem))
+    {
+      stream_vec<-terra::project(stream_vec,terra::crs(terra_dem))
+    }
+    
+    #Rasterize stream layer
+    terra::rasterize(stream_vec, terra_dem,filename=streams_r, overwrite=TRUE)
+    
+    #Load streams as '.sgrd'
     streams_saga <- file.path(tempdir(), "streams_saga_r.sgrd")
     streams_resamp <- file.path(tempdir(), "streams_resamp.sgrd")
     RSAGA::rsaga.import.gdal(in.grid = streams_r, out.grid = streams_saga, env = env)
     
+    #Resample stream raster to dem.sgrd
     RSAGA::rsaga.geoprocessor(lib = 'grid_tools', module = 0,
                               param = list(INPUT=streams_saga,
                                            OUTPUT=streams_resamp,
                                            TARGET_DEFINITION=1,
                                            TARGET_TEMPLATE=dem.sgrd), env=env)
-    
+    #Burn streams into DEM by 'burn_val' in meters 
     RSAGA::rsaga.geoprocessor(lib = "ta_preprocessor", module = 6, 
                               param = list(DEM = dem.sgrd,
                                            STREAM = streams_resamp, 
                                            EPSILON = burn_val),env=env)
   }
   
+  #Create a binary 'SINKS' layer 
   dem.filled<-file.path(outdir, "ELEV_NoSink.sgrd")
   RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',module=4,param=list(ELEV=dem.sgrd,FILLED=dem.filled), env = env)
   
   RSAGA::rsaga.grid.calculus(c(dem.sgrd,dem.filled),file.path(outdir,"SINKS.sgrd"),~abs(a-b)>0)
   
-  
+  #Format user provided 'products', otherwise specify all modules 
   if (is.null(products)) {
     products <- c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI", "CPLAN", "CPROF",
                   "TOPOWET", "CAREA","SINKS")
@@ -119,8 +131,10 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     products <- toupper(products)
   }
   
+  #Vector of product out paths 
   products.out <- paste(file.path(outdir,products),".sgrd",sep="")
   
+  #Function for associating 'param_vect' entries with corresponding 'product' index
   get_param_lst_idx <- function(product)
   {
     idx<-1
@@ -137,8 +151,10 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     return(idx)
   }
   
-  
+  #Use RSAGA to create specified product layers in 'outdir'
   for (i in 1:length(products)) {
+    
+    strt<-Sys.time()
     p <- products[i]
     
     if (p == "SLOPE") {
@@ -155,22 +171,8 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
       
       
-      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
-                                module = 1,
-                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
-                                           USE_NODATA=1,
-                                           GRIDS=file.path(outdir,'NORTHNESS.sgrd'),
-                                           RESULT=file.path(outdir,'NORTHNESS.sgrd')))
-      
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"EASTNESS.sgrd"),~sin(a))
       
-      
-      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
-                                module = 1,
-                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
-                                           USE_NODATA=1,
-                                           GRIDS=file.path(outdir,'EASTNESS.sgrd'),
-                                           RESULT=file.path(outdir,'EASTNESS.sgrd')))
       
       
     } else if (p == "CPLAN") {
@@ -210,6 +212,9 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
                                                     FLOW = products.out[i]),param_values[[get_param_lst_idx("CAREA")]]),
                                 env = env)
     }
+    end<-Sys.time()
+    dur<-end-strt
+    cat(p,dur)
   }
 }
 
@@ -217,12 +222,12 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #' Create a stack of rasters
 #'
 #' Aligns input raster(s) to a target raster so that extent, cell size, and
-#' cell origin are the same, returning a RasterStack object.
+#' cell origin are the same, returning a Terra raster object.
 #'
-#' This function will reproject the input rasters (using bilinear resampling)
-#' to the same projection as the target if necessary.
+#' This function will reproject and or resample the input rasters (using bilinear resampling)
+#' to the same projection as the target, if necessary.
 #'
-#' If \code{outdir} is given an ERDAS Imagine .img file is output for each
+#' If \code{outdir} is given an GTIFF (.tif) file is output for each
 #' aligned raster.
 #'
 #' This function can also output a "rastLUT" CSV file for use as input to
@@ -235,22 +240,18 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #'
 #' @param rasters filename(s) (character) of raster files to be
 #'   stacked with the target_raster. Input rasters can be any format read by
-#'   \code{raster::raster}.
-#' @param aligned optional boolean, indicates whether input rasters are already
-#'   aligned to the same grid. Use \code{aligned = TRUE} if \code{stack_rasters}
-#'   has already been run and you want to create a RasterStack object from an
-#'   existing list of aligned rasters. If \code{aligned = FALSE} (default),
-#'   \code{target_raster} must be provided.
-#' @param target_raster optional filename (character) of target raster used to
-#'   align all other rasters. Required if \code{aligned = FALSE}.
-#' @param outdir optional output folder path (character) where .img files of the
-#'   stacked rasters are saved. If no value is provided, no .img files are saved.
-#'   If \code{aligned = TRUE}, no output .img files are saved, even if an output
-#'   folder is given.
-#' @param rastLUTfn optional filename (character) of output rastLUT .csv file,
-#'   for use in \code{wetland_map}.
-#'
-#' @return RasterStack object
+#'   \code{terra::rast}.
+#' @param target_raster filename (character) of target raster used to
+#'   align all other rasters. 
+#' @param outdir (optional) output folder path (character) where .tif files of the
+#'   stacked rasters are saved. If no value is provided, no .tif files are saved.
+#' @param rastLUTfn (optional) filename (character) of output 'rastLUT.csv' file,
+#'   for use in \code{wetland_map}. Default NULL.
+#' @param rastNames (optional) (character) If rastLUTfn is provided, must provide 
+#' corresponding names of each raster in 'rasters'.
+#' @param NAval NA value of input raster if not NaN (must be same for all), defaults to NaN.
+#' 
+#' @return Multiband Terra raster object
 #'
 #' @examples
 #' \dontrun{
@@ -262,105 +263,143 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #'                               outdir = "output",
 #'                               rastLUTfn = "output/rastLUT.csv")
 #'
-#' # Stack existing, aligned, rasters
-#' raster_list <- c("output/ELEV.img", "output/SLOPE.img", "output/ASPECT.img")
-#' raster_stack_2 <- stack_rasters(rasters = raster_list,
-#'                                 aligned = TRUE)
 #' }
 #' @export
-stack_rasters <- function(rasters,
-                          aligned = FALSE,
-                          target_raster = NULL,
-                          outdir = NULL,
-                          rastLUTfn = NULL) {
-  if (aligned) {
-    outdir <- NULL
-  } else {
-    t <- raster::raster(target_raster)
+stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastNames=NULL,NAval=NaN)
+{  
+  
+  #Read target_raster as terra
+  target_raster<-terra::rast(target_raster)
+  
+  #Get current NA flag of target raster
+  tr_naflag<-terra::NAflag(target_raster)
+  
+  #If current flag is NaN
+  if(is.nan(tr_naflag))
+  {
+    #replace with 'NAval'
+    target_raster[is.nan(target_raster)]<-NAval
+  }else{
+    #replace with 'NAval'
+    target_raster[target_raster==tr_naflag]<-NAval
   }
   
-  files <- basename(rasters)
-  lyr_names<-sub(pattern = "(.*)\\..*$", replacement = "\\1",files)
+  #Set the NAflag to 'NAval' for target raster 
+  terra::NAflag(target_raster)<-NAval
   
-  if (is.null(outdir)) {
-    outfiles <- files
-    outfiles[] <- ""
-  } else {
-    outfiles <- file.path(outdir, files)
-    raster::extension(outfiles) <- "img"
-  }
   
-  # Create the list, of correct length, first rather than appending as
-  # part of the for loop - avoids issues in R with memory use
-  # See: https://stackoverflow.com/questions/14801035/growing-a-list-with-variable-names-in-r
-  rp <- vector(mode = "list", length = length(rasters))
-  rasterLUT <- data.frame(file = character(),
-                          predictor = character(),
-                          band = integer(),
-                          stringsAsFactors = FALSE)
+  #Vector of aligned raster paths 
+  aligned<-c()
   
-  for (i in 1:length(rasters)) {
-    # TO DO:
-    # Check resolution of raster and, if target raster resolution is much
-    # larger, aggregate the input raster to a similar resolution using
-    # raster::aggregate
-    # ...
+  #For each raster in 'rasters'
+  for(i in c(1:length(rasters)))
+  {
+    #Read in raster as terra
+    test<-terra::rast(rasters[i])
     
-    r <- raster::brick(rasters[i])
+    #Check to see if 'test' NAflag is same as NAval
+    na_match<-FALSE
     
-    if (is.na(raster::crs(r)) | is.null(raster::crs(r))) {
-      r.prj <- rasters[i]
-      raster::extension(r.prj) <- "prj"
-      if (file.exists(r.prj)) {
-        r.crs <- rgdal::showP4(readLines(r.prj))
-        raster::crs(r) <- sp::CRS(r.crs)
-      } else {
-        stop(paste0(rasters[i], " has no defined CRS"))
+    if(is.nan(terra::NAflag(test)))
+    {
+      if(is.nan(NAval))
+      {
+        na_match<-TRUE
+      }
+    }else{
+      if(terra::NAflag(test)==NAval)
+      {
+        na_match=TRUE
       }
     }
     
-    # TO DO:
-    # Need to output nodata values as -9999; required for ModelMap.
-    # ...
-    
-    if (!aligned) {
-      # Align raster to target
-      rp[[i]] <- raster::projectRaster(r, t,
-                                       method = "bilinear",
-                                       filename = outfiles[i],
-                                       overwrite = TRUE)
-    } else {
-      names(r)<-lyr_names[i]
-      rp[[i]] <- r
+    #Cehck if the geometry (and crs), NAflag match 'target_raster'
+    if(terra::compareGeom(test, target_raster,stopOnError=F)==FALSE || na_match==FALSE)
+    {
+      
+      #Repalce test NAflag with 'NAval'
+      if(is.nan(terra::NAflag(test)))
+      {
+        test[is.nan(test)]<-NAval
+        terra::NAflag(test)<-NAval
+      }else{
+        test[terra::NAflag(test)]<-NAval
+        terra::Naflag(test)<-NAval
+      }
+      
+      #Reproject if necessary 
+      if(terra::crs(test) != terra::crs(target_raster))
+      {
+        test <- terra::project(test,target_raster)
+      }
+      
+      #If 'outdir' is provided, else write to 'tempdir()'
+      if(!is.null(outdir))
+      {
+        #Check if sub-dir 'resampl' already exists within 'output' dir
+        if(!dir.exists(file.path(outdir,"resampl/")))
+        {
+          #If not, create it
+          dir.create(file.path(outdir,"resampl/"))
+        }
+        
+        #If not create a new raster resampled (and possibly projeted) to 'target_raster'
+        aligned[i]<-paste(outdir,"/resampl/",tools::file_path_sans_ext(basename(rasters[i])),".tif",sep="")
+        terra::resample(test,target_raster,filename=aligned[i],overwrite=T,filetype="GTIFF")
+      }else{
+        #If not create a new raster resampled (and possibly projeted) to 'target_raster'
+        aligned[i]<-paste(tempdir(),"/",tools::file_path_sans_ext(basename(rasters[i])),".tif",sep="")
+        terra::resample(test,target_raster,filename=aligned[i],overwrite=T,filetype="GTIFF")
+      }
+      
+    }else{
+      #Otherwise just add raster path to 'aligned' vector
+      aligned[i]<-rasters[i]
+      
+      #If 'outdir' provided, write to 'outdir'
+      if(!is.null(outdir))
+      {
+        #Check if sub-dir 'resampl' already exists within 'output' dir
+        if(!dir.exists(file.path(outdir,"resampl/")))
+        {
+          #If not, create it
+          dir.create(file.path(outdir,"resampl/"))
+        }
+        
+        #Update 'aligned' path
+        aligned[i]<-paste(outdir,"/resampl/",tools::file_path_sans_ext(basename(rasters[i])),".tif",sep="")
+        #Write out resampled raster 
+        terra::writeRaster(test,filename=aligned[i],overwrite=T,filetype="GTIFF")
+      }
     }
-    
-    # Add rows to rastLUT
-    
-    # If no output .img files are being saved, add the input raster filename
-    # to the rastLUT
-    if (is.null(outdir)) {
-      file = normalizePath(rasters[i], winslash = "/")
-    } else {
-      file = normalizePath(outfiles[i], winslash = "/")
-    }
-    rasterLUT <- rbind(rasterLUT,
-                       data.frame(file = file,
-                                  predictor = lyr_names[i],
-                                  band = 1))
     
   }
   
-  # Write rasterLUT to csv
-  if (!is.null(rastLUTfn)) {
-    write.table(rasterLUT, rastLUTfn,
-                row.names = FALSE,
-                col.names = FALSE,
-                sep=",")
+  #Write rastLUT.csv if 'rastLUTfn' path provided
+  if(!is.null(rastLUTfn))
+  {
+    #Check to see if user provided names for input rasters 
+    if(!is.null(rastNames))
+    {
+      #Create rastLUT
+      aligned_df<-as.data.frame(aligned)
+      aligned_df[,2]<-rastNames
+      aligned_df[,3]<-rep(1,nrow(aligned_df))
+      
+      #write table to rastLUTfn 
+      utils::write.csv(aligned_df,file.path(rastLUTfn,'rastLUT.csv'))
+      
+    }else{
+      cat("Error: Please provide names of raster for rastLUTfn table output.")
+    }
+    
   }
   
-  return(raster::stack(rp))
+  
+  #Return all rasters in 'aligned' vector as terra raster
+  return(terra::rast(aligned))
+  
 }
-
 
 #' Extract raster values at points
 #'
@@ -380,8 +419,8 @@ stack_rasters <- function(rasters,
 #' \code{\link{wetland_model}}. Raster layer names will be used as the column
 #' names in the output.
 #'
-#' @param x Raster* object.
-#' @param y SpatialPoints* object.
+#' @param raster_stack SpatRast* object.
+#' @param points SpatialPoints* object.
 #' @param filename optional output CSV filename.
 #' @param aoi optional SpatialPolygon object, used to intersect with input
 #'   points. If a point intersects more than one polygon, that point will be
@@ -411,33 +450,42 @@ stack_rasters <- function(rasters,
 #'                                             aoi = aoi_polys)
 #' }
 #' @export
-grid_values_at_sp <- function(x, y,
-                              filename = NULL,
-                              aoi = NULL) {
+grid_values_at_sp <- function(raster_stack,points,filename = NULL,aoi = NULL) {
   
-  if(sf::st_crs(x)==sf::st_crs(y))
+  #Confirm that CRS match 
+  if(terra::crs(raster_stack)==terra::crs(points))
   {
+    #Generate join column (ID)
+    points$ID<-c(1:nrow(points))
     
     # Extract raster cell values for each point and add them as an attribute
-    shp.values <- raster::extract(x, y, sp = TRUE)
+    rast.values <- terra::extract(raster_stack, points)
+    
+    #Join rast.values to points by ID
+    points<-terra::merge(points,rast.values,by="ID")
     
     # If AOI is provided, intersect AOI with points
     if (!is.null(aoi)) {
-      if(sf::st_crs(shp.values)==sf::st_crs(aoi))
+      #Check that CRS match 
+      if(terra::crs(points)==terra::crs(aoi))
       {
-        shp.values.aoi <- raster::intersect(shp.values, aoi)
+        #Carry out intersection with AOI
+        points.aoi <- terra::intersect(points, aoi)
       }else{
         cat("Sample points / raster and AOI CRS do not match...")
       }
     } else {
-      shp.values.aoi <- shp.values
+      #Consistent name
+      points.aoi <- points
     }
     if (!is.null(filename)) {
-      utils::write.csv(shp.values.aoi, filename)
+      #write out dataframe  
+      utils::write.csv(terra::as.data.frame(points.aoi), filename)
     }
-    return(shp.values.aoi)
+    return(points.aoi)
   }else{
     cat("Sample points and raster CRS do not match...")
   }
 }
+
 
