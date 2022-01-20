@@ -38,6 +38,8 @@ library(bcmaps)
 library(RStoolbox)
 library(doParallel)
 library(rgrass7)
+library(tools)
+library(terra)
 ```
 
 
@@ -52,13 +54,19 @@ out_dir<-paste(tempdir(),"/wetlandmapR_expl",sep="")
 dir.create(out_dir)
 
 #Load a example digital elevation model DEM from wetlandmapR package 
-target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
+target_dem <- rast(system.file('extdata','DEM.tif',package = 'wetlandmapR'))
+
+target_dem<-project(target_dem,st_crs(3005)$wkt)
+
+writeRaster(target_dem,file.path(tempdir(),'dem.tif'))
+
+target_dem<-file.path(tempdir(),'dem.tif')
 
 #Load freshwater atlas stream data from wetlandmapR package
 streams <- system.file('extdata','streams.shp',package = 'wetlandmapR')
 
 #Create SAGA elevation derivatives using the wetlandmapR 'create_dem_products' function, burn FWA streams into DEM by 2 m ...
-create_dem_products(dem=target_dem,stream_vec = streams, burn_val=2, outdir=out_dir)
+create_dem_products(dem=target_dem,stream_vec = streams, burn_val=2, outdir=out_dir,param_vect = c("TPI"),param_values = list(list(DW_WEIGHTING=2)))
 ```
 
 ## Creating the raster stack, adding external predictors ... 
@@ -77,7 +85,11 @@ raster_list<-raster_list[!raster_list %in% c(file.path(out_dir,'ELEV_NoSink.sdat
 raster_list<-append(raster_list,system.file("extdata", "B4_SENT2.tif", package = "wetlandmapR"))
 
 #Stack all raster inputs using the wetlandmapR 'stack_raster' function, passing 'raster_list' as input, output a raster Look-Up-Table 'rastLUT' CSV 
-raster_stack <- stack_rasters(rasters = raster_list, target_raster = target_dem, outdir = out_dir,rastLUTfn = file.path(out_dir,'rastLUT.csv'), aligned=FALSE)
+raster_stack <- stack_rasters(rasters = raster_list,
+                              target_raster = target_dem,
+                              outdir = out_dir,
+                              rastLUTfn = out_dir, 
+                              rastNames = file_path_sans_ext(basename(raster_list)))
 
 #Plot the new stack of raster objects (input layers)
 plot(raster_stack)
@@ -91,18 +103,17 @@ This code chunck reads in example training points from the [wetlandmapR](https:/
 
 ```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, results=FALSE, fig.cap="Sample points and BEC-ZONE AOI polygons."}
 #Load training data as sp  
-training_points<-st_read(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
+training_points<-vect(system.file('extdata', 'TrainingPnts.shp', package = 'wetlandmapR'))
 
 #Clip training point to subset AOI 
-ext<-extent(raster_stack)
-xmin = ext[1]
-xmax = ext[2]
-ymin=ext[3]
-ymax=ext[4]
-ext <- sf::st_sfc(sf::st_polygon(x = list(rbind(c(xmin, ymin), c(xmax, ymin), c(xmax, ymax), c(xmin, ymax), c(xmin, ymin)))), crs = sf::st_crs(training_points))
-training_points <- st_intersection(training_points,ext)
+ext<-ext(raster_stack)
+xmin = ext$xmin
+xmax = ext$xmax
+ymin=ext$ymin
+ymax=ext$ymax
+ext <- st_sfc(st_polygon(x = list(rbind(c(xmin, ymin), c(xmax, ymin), c(xmax, ymax), c(xmin, ymax), c(xmin, ymin)))), crs = st_crs(training_points))
+training_points <- st_intersection(st_as_sf(training_points),ext)
 
-training_points$OBJECTID<-c(1:nrow(training_points))
 
 #Load BEC zones from bcmaps 
 aoi_polys<-bec(ask=F) %>% st_crop(training_points)
@@ -111,15 +122,20 @@ aoi_polys<-bec(ask=F) %>% st_crop(training_points)
 ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
   geom_sf(data=training_points)
 
-#Convert aoi_polys to sp
-aoi_polys<-as_Spatial(aoi_polys)
+#Convert training_points and aoi_polys to SpatVect
+aoi_polys<-vect(aoi_polys)
+training_points<-vect(training_points)
+
+training_points<-project(training_points,crs(raster_stack))
 
 #Assign filepath for output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
 
+
+
 #Attribute training points with intersected input raster values grouped by provided BEC AOI, write results to CSV. 
-grid_values_at_sp(x=raster_stack,
-                  y=training_points,
+attributed_pnts<-grid_values_at_sp(raster_stack=raster_stack,
+                  points=training_points,
                   filename = attributed_csv,
                   aoi = aoi_polys)
 
@@ -155,10 +171,10 @@ Below we fit a random forest wetland classification model by calling the ***wetl
 
 ```{r message=FALSE, warning=FALSE}
 #Fit a random forest model 
-model.out <- wetland_model(qdatafn = attributed_csv,
+model.out <- wetland_model(qdatafn =  attributed_csv,
                            model.type = "RF",
                            model.folder = file.path(out_dir,"output"),
-                           unique.rowname = "OBJECTID",
+                           unique.rowname = "ID",
                            predList = predList,
                            predFactor = c('SINKS'),
                            response.name = "T_W_Class_",
@@ -171,14 +187,14 @@ model.out <- wetland_model(qdatafn = attributed_csv,
 
 ## Create map(s) from model ...
 
-Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out* for each mdoel / AOI. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and BEC AOI SpatialPolygons (*aoi*), the AOI column (*aoi.col*) is defined as the *ZONE* column. 
+Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out* for each model / AOI. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and BEC AOI SpatialPolygons (*aoi*), the AOI column (*aoi.col*) is defined as the *ZONE* column. 
 
 ```{r warning=FALSE, message=FALSE, results=FALSE}
 #Map random forest results 
 wetland_map(model.out = model.out,
             model.folder = file.path(out_dir,"output"),
             rastLUTfn = rastLUT,
-            aoi = aoi_polys,
+            aoi = st_as_sf(aoi_polys),
             aoi.col = "ZONE")
 ```
 

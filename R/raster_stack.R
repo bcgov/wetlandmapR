@@ -21,7 +21,7 @@
 #'   CAREA:   Top-Down Flow Accumulation.
 #'
 #'
-#' @param dem filename (character) or SpatRaster input DEM raster.
+#' @param dem filename (character) to input DEM raster.
 #' @param stream_vec (Optional)  filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
 #' @param burn_val (Optional) double. The value of Epsilon for burning stream network into DEM.  
 #' @param outdir output folder path (character).
@@ -59,14 +59,6 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
   
   #Find SAGA installation 
   env <- RSAGA::rsaga.env()
-  
-  #Get dem raster as terra
-  if(class(dem)[1]=="SpatRaster")
-  {
-    r<-dem
-  }else{
-    r<-terra::rast(dem) 
-  }
   
   
   # Convert DEM to SAGA grid
@@ -245,8 +237,10 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #'   align all other rasters. 
 #' @param outdir (optional) output folder path (character) where .tif files of the
 #'   stacked rasters are saved. If no value is provided, no .tif files are saved.
-#' @param rastLUTfn (optional) filename (character) of output 'rastLUT.csv' file,
+#' @param rastLUTfn (optional) Directory path (character) for output 'rastLUT.csv' file,
 #'   for use in \code{wetland_map}. Default NULL.
+#' @param (optional) character vector corresponding to rastLUT indicating which band to use as model input.
+#' Defaults to first band for each layer specified in rastLUT. 
 #' @param rastNames (optional) (character) If rastLUTfn is provided, must provide 
 #' corresponding names of each raster in 'rasters'.
 #' @param NAval NA value of input raster if not NaN (must be same for all), defaults to NaN.
@@ -265,7 +259,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #'
 #' }
 #' @export
-stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastNames=NULL,NAval=NaN)
+stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastNames=NULL,NAval=NaN,bands=1)
 {  
   
   #Read target_raster as terra
@@ -382,12 +376,30 @@ stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastN
     if(!is.null(rastNames))
     {
       #Create rastLUT
-      aligned_df<-as.data.frame(aligned)
-      aligned_df[,2]<-rastNames
-      aligned_df[,3]<-rep(1,nrow(aligned_df))
+      
+      rasterLUT<-data.frame(file=character(length(rastNames)),
+                            predictor=character(length(rastNames)),
+                            band=integer(length(rastNames)),
+                            stringsAsFactors = F)
+      
+      
+      
+      
+      rasterLUT$file<-aligned
+      rasterLUT$predictor<-rastNames
+      if(bands==1)
+      {
+        rasterLUT$band<-rep(1,nrow(rasterLUT))
+      }else{
+        rasterLUT$band<-bands
+      }
       
       #write table to rastLUTfn 
-      utils::write.csv(aligned_df,file.path(rastLUTfn,'rastLUT.csv'))
+      utils::write.table(rasterLUT,
+                         file.path(rastLUTfn,'rastLUT.csv'),
+                         row.names = F,
+                         col.names = F,
+                         sep=",")
       
     }else{
       cat("Error: Please provide names of raster for rastLUTfn table output.")
@@ -419,10 +431,10 @@ stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastN
 #' \code{\link{wetland_model}}. Raster layer names will be used as the column
 #' names in the output.
 #'
-#' @param raster_stack SpatRast* object.
-#' @param points SpatialPoints* object.
+#' @param raster_stack SpatRaster* object.
+#' @param points SpatVector* object.
 #' @param filename optional output CSV filename.
-#' @param aoi optional SpatialPolygon object, used to intersect with input
+#' @param aoi optional SpatVector object, used to intersect with input
 #'   points. If a point intersects more than one polygon, that point will be
 #'   duplicated (once for each polygon it intersects) in the output. If a point
 #'   doesn't intersect any AOI polygon it will be excluded from the output.
@@ -480,7 +492,10 @@ grid_values_at_sp <- function(raster_stack,points,filename = NULL,aoi = NULL) {
     }
     if (!is.null(filename)) {
       #write out dataframe  
-      utils::write.csv(terra::as.data.frame(points.aoi), filename)
+      
+      points.aoi<-terra::as.data.frame(points.aoi,row.names = F)
+      
+      utils::write.csv(points.aoi, filename)
     }
     return(points.aoi)
   }else{
