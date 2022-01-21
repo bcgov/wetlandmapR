@@ -1,183 +1,135 @@
-#' Provided 'set_grass_env' has been called, function returns upstream
-#' basin statistics for a user specified pour point, called from 'run_basin_stats'.
-#'
-#' This function assumes 'set_grass_env' has been called. This function will
-#' for a specified pour point delineate the upstream area from the 
-#' DEM present in the GRASS environment using 'r.water.outlet'. Then for
-#' all of the GRASS covariate raster defined by the 'covar_rast' basin statistics
-#' are calculated using 'r.univar'. For each covariate raster the statistic to
-#' return must be specified in the corresponding 'stat_vec' character vector. Returns a 
-#' vector with the UID and associated statistics for each covariate raster.
-#' Function called by 'run_basin_stats' so need not be called by user. 
-#'
-#' @param x The X-Coordinate of the pour point in units of DEM.
-#' @param y The Y-Coordinate of the pour point in units of DEM.
-#' @param uid A unique identifier number for the pour point. 
-#' @param covar_rast Character vector of GRASS-GIS covariate
-#' raster names (assumed to be present in GRASS env.) 
-#' over which to calculate upstream statistics. 
-#' @param stat_vec Character vector, order corresponds 
-#' to 'covar_rast' and specifies what upstream statistic
-#' to return for each covariate raster. Must be one of 
-#' 'N', 'MIN', 'MAX', 'RANGE', 'MEAN', 'MAE', 'STDDEV', 
-#' 'VAR', 'SUM', 'PRCT' or 'NULL_CELLS'.   
-#' @return A vector with upstream basin statistics for 
-#' each covarite raster defined by 'covar_rast' and 'stat_vec'.
-#' @export
-upstream_basin_stats<-function(x,y,uid,covar_rast,stat_vec)
+
+
+
+hydro_condition_dem <- function(dem,outdir,env,minslope=0.1)
 {
-  out_str_basin<-paste('basin_',uid,sep="")
-  out_str_stats<-paste(tempdir(),'/basin_stat_',uid,'.txt',sep="")
   
-  rgrass7::execGRASS(cmd='r.water.outlet',
-                     parameters = list(input='dir',
-                                       coordinates=c(x,y),
-                                       output=out_str_basin),
-                     flags = c('overwrite','quiet'))
+  #Load grid into SAGA format 
+  RSAGA::rsaga.import.gdal(in.grid = dem,
+                           out.grid = file.path(outdir,'DEM'),
+                           show.output.on.console=FALSE,
+                           env=env,
+                           warn=FALSE,
+                           flags=c('s'))
   
-  stat_tab<-c(uid)
+  dem<-file.path(outdir,'DEM.sgrd')
   
-  for(i in c(1:length(covar_rast)))
-  {
-    rgrass7::execGRASS(cmd='r.univar',
-                       parameters = list(map=covar_rast[i],
-                                         zones=out_str_basin,
-                                         output=out_str_stats,
-                                         separator='newline'),
-                       flags=c('g','overwrite'))
-    
-    stats<-readr::read_lines(out_str_stats)
-    
-    
-    if(stat_vec[i]=='N')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[2],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='MIN')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[5],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='MAX')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[6],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='RANGE')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[7],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='MEAN')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[8],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='MAE')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[9],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='STDDEV')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[10],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='VAR')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[11],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='SUM')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[11],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='PRCT')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[11],"=")[[1]][2])/as.numeric(strsplit(stats[4],"=")[[1]][2])
-    }
-    if(stat_vec[i]=='NULL_CELLS')
-    {
-      stat_tab[i+1]<-as.numeric(strsplit(stats[3],"=")[[1]][2])
-    }
-    
-  }
   
-  file.remove(out_str_stats)
   
-  return(stat_tab)
+  RSAGA::rsaga.geoprocessor(lib='ta_preprocessor',
+                            module = 5,
+                            param = list(ELEV=dem,
+                                         FILLED=file.path(outdir,'FILLED'),
+                                         MINSLOPE=minslope),
+                            show.output.on.console=FALSE,
+                            env=env,
+                            warn=FALSE,
+                            flags=c('s'))
+  
+  
+  return(file.path(outdir,'FILLED.sgrd'))
 }
 
 
-#' Provided 'set_grass_env' has been called, function returns upstream
-#' basin statistics for all pour points defined in a pour point data
-#' frame. 
-#'
-#' This function assumes 'set_grass_env' has been called. This function 
-#' iterates 'upstream_basin_stats' over a table of pour points
-#' in parallel. The table of pour points must be a data.frame with
-#' three columns labeled 'X','Y' and 'UID', representing the X, and
-#' Y coordinates of the pour point in units matching the DEM, and a 
-#' unique identifying number (UID). A this function runs in parallel,
-#' the user must specify the number and type of processes to apply.  
-#'
-#' @param procs Number of concurrent process to use, defaults to 1.
-#' @param proc_type Type of 'parallel' cluster to apply, defaults to 'FORK'
-#' @param pour_pnts A data.frame with three columns labeled 'X', 'Y' and 'UID', 
-#' representing the X, and Y coordinates of the pour point in units matching 
-#' the DEM, and a unique identifying number (UID).
-#' @inheritDotParams upstream_basin_stats covar_rast stat_vec 
-#' @return A data frame with upstream statistics computed for each covarite raster
-#' defined in 'covar_rast' over each pour point provided in 'pour_pnts', along with
-#' the pour point UID.
-#' @export
-run_basin_stats<-function(pour_pnts,covar_rast,stat_vect,procs=1,proc_type='FORK')
+
+gen_upstream_basin <-function(dem,x_coord,y_coord,method=2,converge=1.1,outdir,basin_id,env)
 {
   
-  cl<-parallel::makeCluster(procs,type=proc_type)
-  doParallel::registerDoParallel(cl)
+  RSAGA::rsaga.geoprocessor(lib='ta_hydrology',
+                            module=4,
+                            param=list(TARGET_PT_X=x_coord,
+                                       TARGET_PT_Y=y_coord,
+                                       ELEVATION=dem,
+                                       AREA=file.path(outdir,paste('BASIN',basin_id,sep='')),
+                                       METHOD=method,
+                                       CONVERGE=converge),
+                            show.output.on.console=FALSE,
+                            env=env,
+                            warn=FALSE)
   
-  basin_stats_lst<-foreach::foreach(i=c(1:nrow(pour_pnts))) %dopar% upstream_basin_stats(pour_pnts$X[i],pour_pnts$Y[i],pour_pnts$UID[i],covar_rast,stat_vect)
+  RSAGA::rsaga.geoprocessor(lib='grid_calculus',
+                            module=1,
+                            param =list(FORMULA='g1 > 50.0',
+                                        GRIDS=file.path(outdir,paste('BASIN',basin_id,'.sgrd',sep='')),
+                                        RESULT=file.path(outdir,paste('BASIN_BNRY_',basin_id,sep='')),
+                                        TYPE=0),
+                            show.output.on.console=FALSE,
+                            env=env,
+                            warn=FALSE)
   
-  basin_stats<-c()
+  return(file.path(outdir,paste0('BASIN_BNRY_',basin_id,'.sgrd')))
   
-  for(basin in c(1:nrow(pour_pnts)))
-  {
-    basin_stats<-rbind(basin_stats,basin_stats_lst[[basin]])
-  }
-  
-  basin_stats<-as.data.frame(basin_stats)
-  
-  colnames(basin_stats)<-c('UID',paste(covar_rast,stat_vect,sep="_"))
-  
-  parallel::stopCluster(cl)
-  
-  return(basin_stats)
 }
 
-
-#' Provided a DEM (or any raster layer), function returns the XY location
-#' of the minimum (or maximum) raster value within a provided polygon area
-#' of interest.
-#'
-#' @param lyr Typically a digital elevation model, but can be any layer of type 'raster' or 'stars'.
-#' @param poly An sf polygon object representing the area of interest in which to return the location 
-#' of the minimum (or maximum) raster value. 
-#' @param low Should the location of the  lowest or highest raster value be returned, defaults to true. 
-#' @return A numeric vector with he XY coordinated of the highest or lowest raster value in map units. 
-#' @export
-get_low_high_loc<-function(lyr,poly,low=TRUE)
+get_basin_stats<-function(zone_rast,catlist=NULL,statlist,outdir,basin_id,env)
 {
-  if(class(lyr)==class(raster()))
+  outtab<-file.path(outdir,paste0('basinstats_',basin_id))
+  
+  if(!is.null(catlist))
   {
-    lyr <- stars::st_as_stars(lyr)
-  }
-  
-  masked <- as.data.frame(lyr[poly])
-  
-  masked <- masked[complete.cases(masked),]
-  
-  if(low==T)
-  {
-    xy<-as.vector(masked[which.min(masked[,3]),c('x','y')])
+    RSAGA::rsaga.geoprocessor(lib='statistics_grid',
+                              module = 5,
+                              param = list(ZONES=zone_rast,
+                                           CATLIST=catlist,
+                                           STATLIST=statlist,
+                                           OUTTAB=outtab),
+                              show.output.on.console=F,
+                              env=env,
+                              warn=FALSE)
+    
   }else{
-    xy<-as.vector(masked[which.max(masked[,3]),c('x','y')])
+    RSAGA::rsaga.geoprocessor(lib='statistics_grid',
+                              module = 5,
+                              param = list(ZONES=zone_rast,
+                                           STATLIST=statlist,
+                                           OUTTAB=outtab),
+                              show.output.on.console=F,
+                              env=env,
+                              warn=FALSE)
   }
   
-  return(xy)
+  return(read.delim(outtab))
+  
 }
+
+env<-RSAGA::rsaga.env(parallel = T)
+
+
+hcd<-hydro_condition_dem(dem='/home/hunter/R/x86_64-pc-linux-gnu-library/4.0/wetlandmapR/extdata/DEM.tif',
+                         outdir=tempdir(),
+                         env=env)
+
+
+
+# library(doParallel)
+# 
+# cl<-parallel::makeCluster(32)
+# 
+# doParallel::registerDoParallel(cl)
+# 
+# 
+# yup<-foreach(i = 1:100,.packages = 'RSAGA') %dopar%
+# {
+# gub<-gen_upstream_basin(dem=hcd,
+#                    x_coord = 1246640,
+#                    y_coord = 1080390,
+#                    outdir = tempdir(),
+#                    basin_id = i,
+#                    env=env)
+# 
+# 
+# 
+# 
+# hm<-get_basin_stats(zone_rast=gub,
+#                     statlist=paste0(hcd,";","/tmp/RtmplQ7zOE/DEM.sgrd"),
+#                     outdir=tempdir(),
+#                     basin_id = i,
+#                     env=env)
+# 
+# 
+# }
+#stopCluster(cl)
+
+
 
 
