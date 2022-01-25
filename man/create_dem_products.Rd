@@ -10,14 +10,14 @@ create_dem_products(
   burn_val = NULL,
   outdir,
   products = NULL,
-  param_list = NULL,
+  param_vect = NULL,
   param_values = NULL
 )
 }
 \arguments{
-\item{dem}{filename (character) of input DEM raster.}
+\item{dem}{filename (character) to input DEM raster.}
 
-\item{stream_vec}{(Optional) filename (character) to existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.}
+\item{stream_vec}{(Optional)  filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.}
 
 \item{burn_val}{(Optional) double. The value of Epsilon for burning stream network into DEM.}
 
@@ -28,14 +28,14 @@ with any of the following: c("SLOPE", "ASPECT", "DAH", "MRVBF", "TPI",
 "CPLAN", "CPROF", "TOPOWET", "CAREA"). If not provided, this parameter
 defaults to generating all products.}
 
+\item{param_vect}{vector (character). Similar to the \code{products} parameter, this is a vector of
+the SAGA module names (see Details section below) for which non-default
+parameters will be passed. Defaults to NULL.}
+
 \item{param_values}{This is a list of lists, and the order corresponding to \code{param_vect}. For each
 parameter specified in \code{param_vect}, the additional parameters for the corresponding
 SAGA module must be specified using a list of those additional SAGA parameters and their values. 
 Defaults to NULL.}
-
-\item{param_vect}{vector (character). Similar to the \code{products} parameter, this is a vector of
-the SAGA module names (see Details section below) for which non-default
-parameters will be passed. Defaults to NULL.}
 }
 \description{
 Creates raster derivatives (products) from an input Digital Elevation Model
