@@ -2,7 +2,7 @@
 % Please edit documentation in R/raster_stack.R
 \name{stack_rasters}
 \alias{stack_rasters}
-\title{Create a stack of rasters}
+\title{Create a stack of input rasters}
 \usage{
 stack_rasters(
   rasters,
@@ -11,7 +11,8 @@ stack_rasters(
   rastLUTfn = NULL,
   rastNames = NULL,
   NAval = NaN,
-  bands = 1
+  bands = 1,
+  aligned = FALSE
 )
 }
 \arguments{
@@ -23,7 +24,8 @@ stacked with the target_raster. Input rasters can be any format read by
 align all other rasters.}
 
 \item{outdir}{(optional) output folder path (character) where .tif files of the
-stacked rasters are saved. If no value is provided, no .tif files are saved.}
+stacked rasters are saved. If no value is provided, no .tif files are saved. Outputs will be
+placed in a directory names 'resampl'.}
 
 \item{rastLUTfn}{(optional) Directory path (character) for output 'rastLUT.csv' file,
 for use in \code{wetland_map}. Default NULL.}
@@ -33,8 +35,10 @@ corresponding names of each raster in 'rasters'.}
 
 \item{NAval}{NA value of input raster if not NaN (must be same for all), defaults to NaN.}
 
-\item{(optional)}{character vector corresponding to rastLUT indicating which band to use as model input.
+\item{bands}{(optional) character vector corresponding to rastLUT indicating which band to use as model input.
 Defaults to first band for each layer specified in rastLUT.}
+
+\item{aligned}{(Boolean) If true, function acts as wrapper for terra::rast, default false.}
 }
 \value{
 Multiband Terra raster object

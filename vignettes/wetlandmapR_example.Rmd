@@ -9,20 +9,20 @@ vignette: >
 ---
   
   
-  Using example data provided with the package the following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery. This document is written to serve as a reference for performing similar classification in any area of interest. 
+Using example data provided with the package the following vignette demonstrates the use of the [wetlandmapR](https://github.com/bcgov/wetlandmapR) package to classify wetlands using terrain derivatives and external inputs such as satellite imagery. This document is written to serve as a reference for performing similar classification in any area of interest. 
   
 ## Using the wetlandmapr Docker ...
   
   A Docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Please see the [Docker Install](https://docs.docker.com/engine/install/) page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) Docker image can be downloaded by passing the command below from your terminal or command prompt: 
   
-  ```{bash eval=FALSE}
-  docker pull huntgdok/wetlandmapr:latest
-  ```
+```{bash eval=FALSE}
+docker pull huntgdok/wetlandmapr:latest
+```
   once the image has been successfully pulled, it can be run from the terminal or command prompt using the docker run call as shown below  
   
-  ```{bash eval=FALSE}
-  docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 -v "/c/User/Desktop/Data:/home/rstudio/Data" --rm huntgdok/wetlandmapr:latest
-  ```
+```{bash eval=FALSE}
+docker run -e PASSWORD=APassword -e ROOT=TRUE -p 8787:8787 -v "/c/User/Desktop/Data:/home/rstudio/Data" --rm huntgdok/wetlandmapr:latest
+```
   
   where *APassword* is any password you want to use to log into *rocker*. To use with sudo privileges, add *-e ROOT=TRUE* to the docker run call as shown above.  The *-v* flag in the Docker run call above mounts a volume on the host machine, in this case */c/User/Desktop/Data* on a Windows machine, to a directory called *Data* on the Docker container, see [Use Volumes](https://docs.docker.com/storage/volumes/) for more information about mounting volumes. To view the running docker, go to the local URL [localhost](http://localhost:8787) *http://localhost:8787* in your internet browser. When prompted for a *username* and *password*, supply *rstudio* as a username, and the password that you set with the *docker run* call. You should then have a R-Studio session running with all the R and third party dependencies required for running the [**wetlandmapR**](https://github.com/bcgov/wetlandmapR) package. 
   
@@ -31,15 +31,16 @@ vignette: >
 ## Load R package dependencies ... 
   
 ```{r message=FALSE, warning=FALSE}
-library(wetlandmapR)
-library(sf)
-library(tidyverse)
-library(bcmaps)
-library(RStoolbox)
-library(doParallel)
-library(rgrass7)
-library(tools)
-library(terra)
+library('wetlandmapR')
+library('terra')
+library('sf')
+library('tools')
+library('bcmaps')
+library('ggplot2')
+library('RStoolbox')
+library('RSAGA')
+library('doParallel')
+library('parallel')
 ```
 
 
@@ -54,13 +55,7 @@ out_dir<-paste(tempdir(),"/wetlandmapR_expl",sep="")
 dir.create(out_dir)
 
 #Load a example digital elevation model DEM from wetlandmapR package 
-target_dem <- rast(system.file('extdata','DEM.tif',package = 'wetlandmapR'))
-
-target_dem<-project(target_dem,st_crs(3005)$wkt)
-
-writeRaster(target_dem,file.path(tempdir(),'dem.tif'))
-
-target_dem<-file.path(tempdir(),'dem.tif')
+target_dem <- system.file('extdata','DEM.tif',package = 'wetlandmapR')
 
 #Load freshwater atlas stream data from wetlandmapR package
 streams <- system.file('extdata','streams.shp',package = 'wetlandmapR')
@@ -92,7 +87,7 @@ raster_stack <- stack_rasters(rasters = raster_list,
                               rastNames = file_path_sans_ext(basename(raster_list)))
 
 #Plot the new stack of raster objects (input layers)
-plot(raster_stack)
+terra::plot(raster_stack)
 
 ```
 
@@ -126,7 +121,9 @@ ggplot()+geom_sf(data=aoi_polys,aes(fill=ZONE))+
 aoi_polys<-vect(aoi_polys)
 training_points<-vect(training_points)
 
-training_points<-project(training_points,crs(raster_stack))
+aoi_polys<-project(aoi_polys,crs(training_points))
+
+raster_stack<-project(raster_stack,crs(training_points))
 
 #Assign filepath for output CSV
 attributed_csv <- file.path(out_dir,"train_pnts_attributed.csv")
@@ -164,7 +161,145 @@ dir.create(file.path(out_dir,"output"))
 
 ```
 
+## Run model and diagnostics ...
+
+Below we fit a random forest wetland classification model by calling the ***wetlandmapR::wetland_model*** function using the training data that we attributed with the input raster layers above. We declare the response field to be the "T_W_Class" field, and set *response.type* as categorical. The "OBJECTID" is defined as identifying unique observations. We specify that we want to use the "BGC_ZONE" column to identify separate AOIs, and a separate model is fit for each unique AOI polygon. The *responce.target* parameter is for subsetting the training dataset, in this case we use all wetland categories. We also define the "SINKS" column (input) to be a factor variable. The results include a list containing *model.build* objects output from the [ModelMap](https://cran.r-project.org/web/packages/ModelMap/index.html) package for each AOI. Model outputs will be output to the *model.folder* directory, in this case "output". Because the modeling process in random, a seed it set for reproducibility. 
+
+```{r message=FALSE, warning=FALSE}
+#Fit a random forest model 
+model.out <- wetland_model(qdatafn = attributed_csv,
+                           model.type = "RF",
+                           model.folder = file.path(out_dir,"output"),
+                           unique.rowname = "ID",
+                           predList = predList,
+                           predFactor = c('SINKS'),
+                           response.name = "T_W_Class_",
+                           response.type = "categorical",
+                           seed = 42,
+                           response.target = as.vector(unique(training_points$T_W_Class_)),
+                           aoi.col = "BGC_ZONE")
+```
+
+
+## Create map(s) from model ...
+
+Finally we call the ***wetlandmapR::wetland_map*** function which generates raster prediction surfaces using the model outputs from ***wetlandmapR::wetland_model***, i.e., *model.out* for each mdoel / AOI. We point the function to the output directory assigned to *wetland_model* above. We also pass the *rastLUT* data frame, and BEC AOI SpatialPolygons (*aoi*), the AOI column (*aoi.col*) is defined as the *ZONE* column. 
+
+```{r warning=FALSE, message=FALSE, results=FALSE}
+#Map random forest results 
+wetland_map(model.out = model.out,
+            model.folder = file.path(out_dir,"output"),
+            rastLUTfn = rastLUT,
+            aoi = aoi_polys,
+            aoi.col = "ZONE")
+```
+
+
+
+## Plot map results
+
+Plot the output classified ERDAS images by AOI ...
+
+```{r fig.width=6, fig.height=6, warning=FALSE, message=FALSE, fig.cap="Mapped Classification Results by AOI"}
+#Get .img file paths from temporary directory 
+SBS.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "SBS")
+ESSF.dir<-list.files(paste(tempdir(),'/wetlandmapR_expl/output/',sep=''),pattern = "ESSF")
+SBS.img<-paste(SBS.dir,'_map.img',sep='')
+ESSF.img<-paste(ESSF.dir,'_map.img',sep='')
+SBS.key<-paste(SBS.dir,'_map_key.csv',sep='')
+ESSF.key<-paste(ESSF.dir,'_map_key.csv',sep='')
+#Plot map results for each AOI
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "SBS Class")
+SBS_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.key,sep=''))
+SBS_key
+ggR(img=raster(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.img,sep='')),forceCat = T,geom_raster = T)+labs(fill = "ESSF Class")
+ESSF_key<-read.csv(paste(tempdir(),'/wetlandmapR_expl/output/',ESSF.dir,'/',ESSF.key,sep=''))
+ESSF_key
+```
 
 
 
 
+### Polygonize wetland classification map ...
+
+In this chunk we polygonize the resulting wetland classification map for the SBS BEC Zone generated by ***wetlandmapR::wetland_map*** using the ***wetlandmapR::raster_to_clean_polygon*** function. The classified raster for the SBS zone is provided as the input raster *r*, any polygons with an area less than 2500 square meters are removed (*min_area_drop_m2*), and any holes larger than 2500 square meters are filled (*max_area_fill_m2*). Optionally the resulting wetland polygons can be smoothed using the [smoothr](https://cran.r-project.org/web/packages/smoothr/vignettes/smoothr.html) package by setting *smooth* as TRUE, and the desired smoothing method (*smooth_method*). The *workers* parameter defines the number of computer cores to use for the polygonization. The polygonized wetland classes are plotted below for the SBS model output.  
+
+```{r fig.width=6, fig.height=6, message=FALSE, warning=FALSE, fig.cap="Mapped Classification Results by AOI as simplified polygons"}
+#Load the wetland classification map for the SBS BEC Zone as raster object
+SBS_classified <- rast(paste(tempdir(),'/wetlandmapR_expl/output/',SBS.dir,'/',SBS.img,sep=''))
+#Polygonize wetland classification map 
+SBS_Class_ply <- raster_to_clean_polygon(r=SBS_classified,min_area_drop_m2=2500,max_area_fill=2500,smooth=T,smooth_method="chaikin",workers=2)
+#Plot polygon wetland classification for SBS BEC Zone
+ggplot()+
+  geom_sf(data = SBS_Class_ply,aes(fill=as.factor(class)))+
+  scale_color_brewer(palette = "Spectral")+
+  labs(fill = "SBS Class")
+```
+
+
+### Identify high accumulation pour points ...
+
+With the classified raster output converted to polygons, pour points for each polygon can be identified using the flow accumulation raster output from the GRASS-GIS r.watershed module. This is done by applying the ***wetlandmapR::get_low_high_loc*** function to each polygon (*poly*) and using the accumulation raster as input (*lyr*), and creating a matrix from the X-Y coordinates returned, along with a unique polygon identifier field *UID*. The *low* parameter return the location of the minimum raster value bounded by the provided polygon when TRUE, and maximum value when set to FALSE. 
+
+```{r message=FALSE, warning=FALSE}
+#Create a flow accumlation layer using RSAGA for target DEM
+rsaga.geoprocessor(lib='ta_hydrology',
+                          module=29,
+                          param = list(DEM=target_dem,
+                                       FLOW=file.path(out_dir,'ACC'),
+                                       CONVERGENCE=1.1))
+
+
+#Load the accumulation layer output from `set_grass_env` model as terra raster
+acc<-rast(file.path(out_dir,'ACC.sdat'))
+
+#Initialize an empty coordinates vector 
+low_pnts <- c()
+#Populate coordinated vector with coordinates of highest accumulation pixel within each wetland polygon 
+for(i in 1:nrow(SBS_Class_ply))
+{
+  low_pnts<-rbind(low_pnts,cbind(get_low_high_loc(lyr=acc,poly=st_geometry(SBS_Class_ply[i,]),low=F),i))
+}
+```
+
+
+### Calculate upstream basin statistics ...
+```{r message=FALSE, warning=FALSE}
+env<-rsaga.env(parallel = T)
+
+
+hcd<-hydro_condition_dem(dem=target_dem,
+                         outdir=tempdir(),
+                         env=env)
+
+
+
+
+upstream_stats<-c()
+
+for(i in c(1:20))
+{
+  gub<-gen_upstream_basin(dem=hcd,
+                          x_coord = low_pnts$x[i],
+                          y_coord = low_pnts$y[i],
+                          outdir = tempdir(),
+                          basin_id = i,
+                          env=env)
+  
+  
+  
+  
+  basin_stats<-get_basin_stats(zone_rast=gub,
+                               statlist= paste(rastLUT$V1,collapse = ';'),
+                               outdir=tempdir(),
+                               basin_id = i,
+                               env=env)
+  
+  upstream_stats<-rbind(upstream_stats,basin_stats[basin_stats$BASIN_BNRY==1,])
+  
+  
+}
+
+head(upstream_stats)
+
+```

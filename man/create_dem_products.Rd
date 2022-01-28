@@ -17,7 +17,7 @@ create_dem_products(
 \arguments{
 \item{dem}{filename (character) to input DEM raster.}
 
-\item{stream_vec}{(Optional)  filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.}
+\item{stream_vec}{(Optional) filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.}
 
 \item{burn_val}{(Optional) double. The value of Epsilon for burning stream network into DEM.}
 
@@ -43,7 +43,7 @@ Creates raster derivatives (products) from an input Digital Elevation Model
 }
 \details{
 This function uses RSAGA which requires having SAGA-GIS (v2.3+) installed.
-The input DEM can be in any format that can be read by \code{raster::raster}.
+The input DEM can be in any format that can be read by \code{terra::rast}.
 Output rasters are saved in the SAGA Grid format, including a SAGA Grid
 version of the input DEM, saved as "ELEV.sgrd".
 

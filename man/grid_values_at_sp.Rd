@@ -2,7 +2,7 @@
 % Please edit documentation in R/raster_stack.R
 \name{grid_values_at_sp}
 \alias{grid_values_at_sp}
-\title{Extract raster values at points}
+\title{Extracts raster values at points}
 \usage{
 grid_values_at_sp(raster_stack, points, filename = NULL, aoi = NULL)
 }
@@ -22,12 +22,12 @@ doesn't intersect any AOI polygon it will be excluded from the output.}
 SpatialPoints* object with values added to it's data frame
 }
 \description{
-Adds cell values from a Raster* object as attributes to a SpatialPoints*
+Adds cell values from a Raster *object as attributes to a SpatVector*
 object.
 }
 \details{
-If the Raster* object contains multiple bands or layers, an attribute for
-band/layer will be added to the points. Raster names are used as attribute
+If the SpatRaster object contains multiple bands or layers, an attribute for
+each band/layer will be added to the point attributes table. Raster names are used as attribute
 column names; for multiband rasters, the column name is
 \code{<name>.<band number>}.
 

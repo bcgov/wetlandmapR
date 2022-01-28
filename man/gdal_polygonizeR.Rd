@@ -14,7 +14,7 @@ gdal_polygonizeR(
 )
 }
 \arguments{
-\item{x}{`character`filename of a raster file, or "SpatRaster" raster object}
+\item{x}{`character`filename of a raster file, or "R" raster object}
 
 \item{outshape}{`character`filename of the desired output polygon shapefile}
 
@@ -36,7 +36,7 @@ A sf polygon object.
 R Wrapper for the gdal_polygonize.py python script (http://www.gdal.org/gdal_polygonize.html)
 This utility creates vector polygons for all connected regions of pixels in the raster sharing
 a common pixel value. Each polygon is created with an attribute indicating the pixel value of
-that polygon. Can be useful for example to create fishnet polygons (see "create_fishnet")
+that polygon. Can be userful for example to create fishnet polygons (see "create_fishnet")
 }
 \author{
 Original code by Jonh Baumgartner

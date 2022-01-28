@@ -4,7 +4,7 @@
 #' (DEM) using SAGA-GIS.
 #'
 #' This function uses RSAGA which requires having SAGA-GIS (v2.3+) installed.
-#' The input DEM can be in any format that can be read by \code{raster::raster}.
+#' The input DEM can be in any format that can be read by \code{terra::rast}.
 #' Output rasters are saved in the SAGA Grid format, including a SAGA Grid
 #' version of the input DEM, saved as "ELEV.sgrd".
 #'
@@ -22,7 +22,7 @@
 #'
 #'
 #' @param dem filename (character) to input DEM raster.
-#' @param stream_vec (Optional)  filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
+#' @param stream_vec (Optional) filename (character) or SpatVector of existing vector stream network to burn into DEM, e.g., Fresh Water Atlas.  
 #' @param burn_val (Optional) double. The value of Epsilon for burning stream network into DEM.  
 #' @param outdir output folder path (character).
 #' @param products character. The DEM products to be created. Can be a vector
@@ -162,8 +162,22 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
       
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"NORTHNESS.sgrd"),~cos(a))
       
+      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
+                                module = 1,
+                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
+                                           USE_NODATA=1,
+                                           GRIDS=file.path(outdir,'NORTHNESS.sgrd'),
+                                           RESULT=file.path(outdir,'NORTHNESS.sgrd')))
+      
       
       RSAGA::rsaga.grid.calculus(file.path(outdir,'ASPECT.sgrd'),file.path(outdir,"EASTNESS.sgrd"),~sin(a))
+      
+      RSAGA::rsaga.geoprocessor(lib='grid_calculus',
+                                module = 1,
+                                param=list(FORMULA='ifelse(eq(g1,nodata()),0.0,g1)',
+                                           USE_NODATA=1,
+                                           GRIDS=file.path(outdir,'EASTNESS.sgrd'),
+                                           RESULT=file.path(outdir,'EASTNESS.sgrd')))
       
       
       
@@ -211,7 +225,7 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 }
 
 
-#' Create a stack of rasters
+#' Create a stack of input rasters
 #'
 #' Aligns input raster(s) to a target raster so that extent, cell size, and
 #' cell origin are the same, returning a Terra raster object.
@@ -236,16 +250,17 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #' @param target_raster filename (character) of target raster used to
 #'   align all other rasters. 
 #' @param outdir (optional) output folder path (character) where .tif files of the
-#'   stacked rasters are saved. If no value is provided, no .tif files are saved.
+#'   stacked rasters are saved. If no value is provided, no .tif files are saved. Outputs will be
+#'   placed in a directory names 'resampl'.
 #' @param rastLUTfn (optional) Directory path (character) for output 'rastLUT.csv' file,
 #'   for use in \code{wetland_map}. Default NULL.
-#' @param (optional) character vector corresponding to rastLUT indicating which band to use as model input.
+#' @param bands (optional) character vector corresponding to rastLUT indicating which band to use as model input.
 #' Defaults to first band for each layer specified in rastLUT. 
 #' @param rastNames (optional) (character) If rastLUTfn is provided, must provide 
 #' corresponding names of each raster in 'rasters'.
 #' @param NAval NA value of input raster if not NaN (must be same for all), defaults to NaN.
-#' 
-#' @return Multiband Terra raster object
+#' @param aligned (Boolean) If true, function acts as wrapper for terra::rast, default false. 
+#' @return Multiband Terra raster object 
 #'
 #' @examples
 #' \dontrun{
@@ -259,8 +274,11 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
 #'
 #' }
 #' @export
-stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastNames=NULL,NAval=NaN,bands=1)
+stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastNames=NULL,NAval=NaN,bands=1,aligned=FALSE)
 {  
+  
+  if(aligned==F)
+  {
   
   #Read target_raster as terra
   target_raster<-terra::rast(target_raster)
@@ -410,16 +428,19 @@ stack_rasters <- function(rasters,target_raster,outdir=NULL,rastLUTfn=NULL,rastN
   
   #Return all rasters in 'aligned' vector as terra raster
   return(terra::rast(aligned))
+  }else{
+    return(terra::rast(rasters))
+  }
   
 }
 
-#' Extract raster values at points
+#' Extracts raster values at points
 #'
-#' Adds cell values from a Raster* object as attributes to a SpatialPoints*
+#' Adds cell values from a Raster *object as attributes to a SpatVector*
 #' object.
 #'
-#' If the Raster* object contains multiple bands or layers, an attribute for
-#' band/layer will be added to the points. Raster names are used as attribute
+#' If the SpatRaster object contains multiple bands or layers, an attribute for
+#' each band/layer will be added to the point attributes table. Raster names are used as attribute
 #' column names; for multiband rasters, the column name is
 #' \code{<name>.<band number>}.
 #'
