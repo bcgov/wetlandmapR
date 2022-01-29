@@ -311,7 +311,7 @@ for(i in c(1:20))
                                env=env)
   
   #Bind new statistics to the upstream_stats matrix 
-  upstream_stats<-rbind(i,upstream_stats,basin_stats[basin_stats$BASIN_BNRY==1,])
+  upstream_stats<-rbind(upstream_stats,basin_stats[2,])
   
   
 }
