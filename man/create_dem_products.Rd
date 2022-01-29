@@ -11,7 +11,8 @@ create_dem_products(
   outdir,
   products = NULL,
   param_vect = NULL,
-  param_values = NULL
+  param_values = NULL,
+  env = RSAGA::rsaga.env()
 )
 }
 \arguments{
@@ -36,6 +37,8 @@ parameters will be passed. Defaults to NULL.}
 parameter specified in \code{param_vect}, the additional parameters for the corresponding
 SAGA module must be specified using a list of those additional SAGA parameters and their values. 
 Defaults to NULL.}
+
+\item{env}{A RSAGA environment, defaults to RSAGA::rsaga.env()}
 }
 \description{
 Creates raster derivatives (products) from an input Digital Elevation Model

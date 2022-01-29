@@ -35,7 +35,8 @@
 #' @param param_values This is a list of lists, and the order corresponding to \code{param_vect}. For each
 #' parameter specified in \code{param_vect}, the additional parameters for the corresponding
 #' SAGA module must be specified using a list of those additional SAGA parameters and their values. 
-#' Defaults to NULL.    
+#' Defaults to NULL.
+#' @param env A RSAGA environment, defaults to RSAGA::rsaga.env()
 #'
 #' @return NULL
 #'
@@ -45,7 +46,7 @@
 #'                     products = c("SLOPE", "CAREA"))
 #' }
 #' @export
-create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL) {
+create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, products = NULL,param_vect=NULL,param_values=NULL,env=RSAGA::rsaga.env()) {
   
   #Check if 'param_vect' provided
   if(is.null(param_vect))
@@ -56,9 +57,6 @@ create_dem_products <- function(dem,stream_vec = NULL,burn_val=NULL,outdir, prod
     #Add NULL as first list entry 
     param_values<-append(list(NULL),param_values)
   }
-  
-  #Find SAGA installation 
-  env <- RSAGA::rsaga.env()
   
   
   # Convert DEM to SAGA grid
