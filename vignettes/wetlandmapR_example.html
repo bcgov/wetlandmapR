@@ -146,7 +146,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Using example data provided with the package the following vignette demonstrates the use of the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR</a> package to classify wetlands using terrain derivatives and external inputs such as satellite imagery. This document is written to serve as a reference for performing similar classification in any area of interest.</p>
 <div id="using-the-wetlandmapr-docker" class="section level2">
 <h2>Using the wetlandmapr Docker …</h2>
-<p>A Docker image based on the <a href="https://hub.docker.com/r/rocker/geospatial"><strong>rocker/geospatial:3.6.3</strong></a> image has been assembled for running the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR package</a> package. Please see the <a href="https://docs.docker.com/engine/install/">Docker Install</a> page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the <a href="https://hub.docker.com/repository/docker/huntgdok/geospat">huntgdok/wetlandmapr:latest</a> Docker image can be downloaded by passing the command below from your terminal or command prompt:</p>
+<p>A Docker image based on the <a href="https://hub.docker.com/r/rocker/geospatial"><strong>rocker/geospatial:4.1.2</strong></a> image has been assembled for running the <a href="https://github.com/bcgov/wetlandmapR">wetlandmapR package</a> package. Please see the <a href="https://docs.docker.com/engine/install/">Docker Install</a> page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the <a href="https://hub.docker.com/r/huntgdok/wetlandmapr">huntgdok/wetlandmapr:latest</a> Docker image can be downloaded by passing the command below from your terminal or command prompt:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull huntgdok/wetlandmapr:latest</span></code></pre></div>
 <p>once the image has been successfully pulled, it can be run from the terminal or command prompt using the docker run call as shown below</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-e</span> PASSWORD=APassword <span class="at">-e</span> ROOT=TRUE <span class="at">-p</span> 8787:8787 <span class="at">-v</span> <span class="st">&quot;/c/User/Desktop/Data:/home/rstudio/Data&quot;</span> <span class="at">--rm</span> huntgdok/wetlandmapr:latest</span></code></pre></div>
@@ -278,19 +278,19 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#View rastLUT table </span></span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>rastLUT</span></code></pre></div>
 <pre><code>##                                                          V1          V2 V3
-## 1        /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/CAREA.tif       CAREA  1
-## 2        /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/CPLAN.tif       CPLAN  1
-## 3        /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/CPROF.tif       CPROF  1
-## 4          /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/DAH.tif         DAH  1
-## 5     /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/EASTNESS.tif    EASTNESS  1
-## 6  /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/ELEV_NoSink.tif ELEV_NoSink  1
-## 7        /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/MRVBF.tif       MRVBF  1
-## 8    /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/NORTHNESS.tif   NORTHNESS  1
-## 9        /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/SINKS.tif       SINKS  1
-## 10       /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/SLOPE.tif       SLOPE  1
-## 11     /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/TOPOWET.tif     TOPOWET  1
-## 12         /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/TPI.tif         TPI  1
-## 13    /tmp/RtmpGLEsC3/wetlandmapR_expl/resampl/B4_SENT2.tif    B4_SENT2  1</code></pre>
+## 1        /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/CAREA.tif       CAREA  1
+## 2        /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/CPLAN.tif       CPLAN  1
+## 3        /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/CPROF.tif       CPROF  1
+## 4          /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/DAH.tif         DAH  1
+## 5     /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/EASTNESS.tif    EASTNESS  1
+## 6  /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/ELEV_NoSink.tif ELEV_NoSink  1
+## 7        /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/MRVBF.tif       MRVBF  1
+## 8    /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/NORTHNESS.tif   NORTHNESS  1
+## 9        /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/SINKS.tif       SINKS  1
+## 10       /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/SLOPE.tif       SLOPE  1
+## 11     /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/TOPOWET.tif     TOPOWET  1
+## 12         /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/TPI.tif         TPI  1
+## 13    /tmp/Rtmpqj6LKr/wetlandmapR_expl/resampl/B4_SENT2.tif    B4_SENT2  1</code></pre>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Get the list of input predictor names (2nd column)</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>predList <span class="ot">&lt;-</span> rastLUT[,<span class="dv">2</span>]</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>

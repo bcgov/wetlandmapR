@@ -13,7 +13,7 @@ Using example data provided with the package the following vignette demonstrates
   
 ## Using the wetlandmapr Docker ...
   
-A Docker image based on the [**rocker/geospatial:3.6.3**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Please see the [Docker Install](https://docs.docker.com/engine/install/) page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/repository/docker/huntgdok/geospat) Docker image can be downloaded by passing the command below from your terminal or command prompt: 
+A Docker image based on the [**rocker/geospatial:4.1.2**](https://hub.docker.com/r/rocker/geospatial) image has been assembled for running the [wetlandmapR package](https://github.com/bcgov/wetlandmapR) package. Please see the [Docker Install](https://docs.docker.com/engine/install/) page for platform specific guidance on installing Docker. Assuming a local installation of Docker is in place, the [huntgdok/wetlandmapr:latest](https://hub.docker.com/r/huntgdok/wetlandmapr) Docker image can be downloaded by passing the command below from your terminal or command prompt: 
   
 ```{bash eval=FALSE}
 docker pull huntgdok/wetlandmapr:latest

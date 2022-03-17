@@ -39,11 +39,11 @@ This function computes upstream basin statistics provided input grids and and a 
 ## Installation
 Get the latest version from GitHub with:
 ```r
-remotes::install_github("bcgov/wetlandmapR",ref="migrate_stars")
+remotes::install_github("bcgov/wetlandmapR")
 ```
 
 ## Or with Docker 
-Download a Docker image based on *rocker/geospatial:3.6.3* with all the required dependencies and packages pre-installed with:
+Download a Docker image based on *rocker/geospatial:4.1.2* with all the required dependencies and packages pre-installed with:
 ```bash
 docker pull huntgdok/wetlandmapr:latest
 ```
